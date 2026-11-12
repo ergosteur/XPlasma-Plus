@@ -371,5 +371,25 @@
     }
    ]
   }
+ ],
+ "keyboardlayout/main.qml": [
+  {
+   "find": "        PlasmaComponents3.Label {\n            id: countryCode\n",
+   "replace": "        Rectangle {\n            // XP's language bar indicator: a navy badge spanning the slot's full WIDTH (unlike the old\n            // text label's Math.min(width, height) square, which left empty panel background on either\n            // side in a slot wider than it's tall) but keeping that same, already-correct height.\n            anchors {\n                left: parent.left\n                right: parent.right\n                verticalCenter: parent.verticalCenter\n            }\n            height: Math.min(switcher.width, switcher.height)\n            visible: countryCode.visible\n            color: \"#000080\"\n        }\n\n        PlasmaComponents3.Label {\n            id: countryCode\n",
+   "optional": true,
+   "unlessContains": "XP's language bar indicator"
+  },
+  {
+   "find": "            text: switcher.layoutNames.displayName || switcher.layoutNames.shortName\n            textFormat: Text.PlainText\n",
+   "replace": "            // XP's language bar shows a short code, uppercase. displayName is the user's own short\n            // label from System Settings > Keyboard (\"EN\", \"FR\"...) when they set one there -- that's\n            // where the override lives, not shortName (the fixed xkb layout code, e.g. \"us\"/\"ca\") -- so\n            // no language-name mapping belongs here, just show whichever of the two is set.\n            text: (switcher.layoutNames.displayName || switcher.layoutNames.shortName).toUpperCase()\n            textFormat: Text.PlainText\n            color: \"white\"\n",
+   "optional": true,
+   "unlessContains": "color: \"white\""
+  },
+  {
+   "find": "            width: Math.min(switcher.width, switcher.height)\n            height: width\n\n            visible: Plasmoid.configuration.displayStyle === 0 || !flag.valid\n",
+   "replace": "            // A bit smaller than the navy badge behind it (see the Rectangle above), so the letters\n            // get breathing room instead of filling it edge to edge. The small offsets below are a\n            // measured correction (pixel-counted from a screenshot): with neither offset, \"EN\" sits\n            // ~1px too far right and ~2px too low within the badge.\n            width: Math.min(switcher.width, switcher.height) * 0.5\n            height: width\n            anchors.horizontalCenterOffset: -width * 0.12\n            anchors.verticalCenterOffset: -height * 0.05\n\n            visible: Plasmoid.configuration.displayStyle === 0 || !flag.valid\n",
+   "optional": true,
+   "unlessContains": "breathing room"
+  }
  ]
 }

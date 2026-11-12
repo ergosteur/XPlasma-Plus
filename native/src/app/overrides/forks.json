@@ -584,6 +584,14 @@
     "files": {
      "panel/main.qml": "main.qml"
     }
+   },
+   {
+    "id": "org.kde.plasma.keyboardlayout",
+    "project": "plasma-desktop",
+    "dir": "applets/keyboardlayout",
+    "files": {
+     "keyboardlayout/main.qml": "qml/main.qml"
+    }
    }
   ],
   "rules": {
