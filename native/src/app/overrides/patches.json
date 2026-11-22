@@ -291,6 +291,12 @@
   {
    "find": "    id: main\n",
    "replace": "    id: main\n    // XPlasma: crisp XP text, when it's on, for its icons' labels (FolderItemDelegate.qml).\n    XpTextStyle { id: xpPixelTextStyle }\n    readonly property var xpTextStyle: xpPixelTextStyle\n"
+  },
+  {
+   "find": "Kirigami.Units.iconSizes.small * ((Plasmoid.configuration.labelWidth * 2) + 4))",
+   "replace": "Kirigami.Units.iconSizes.small * ((Plasmoid.configuration.labelWidth * 2) + 5.125)) /* XPlasma: XP kept \"My Documents\" on one line; Narrow (64px) wraps it, 82px is the least that fits */",
+   "optional": true,
+   "unlessContains": "XPlasma: XP kept \"My Documents\" on one line"
   }
  ],
  "panel/main.qml": [
