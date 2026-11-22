@@ -21,4 +21,17 @@ class FontDefaults(unittest.TestCase):
    self.assertEqual(document.findall('match'),[])
    self.assertTrue(any(call.args[2]=='menuFont' and call.args[3].startswith('Tahoma OS,') for call in config.call_args_list))
    self.assertFalse(any('xp-fonts.conf' in str(call.args[0]) for call in copy.call_args_list))
+ def test_own_fixed_font_customization_leaves_the_fixed_font_alone(self):
+  tree=ast.parse((ROOT/'backend.py').read_text())
+  node=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='basic')
+  config=Mock();run=Mock()
+  namespace=dict(Path=Path,BASE=ROOT,copy=Mock(),config=config,run=run,shutil=Mock(which=Mock(return_value='/usr/bin/gsettings')),restart_auth_agent=Mock())
+  exec(compile(ast.Module(body=[node],type_ignores=[]),'backend.py','exec'),namespace)
+  from unittest.mock import patch
+  sys.path.insert(0,str(ROOT))
+  with patch.dict(sys.modules,{'tahoma_os':types.SimpleNamespace(generate=Mock())}), tempfile.TemporaryDirectory() as directory:
+   namespace['basic'](Path(directory),{'fonts'},native=True,asset_options={'tweaks':['own_fixed_font']})
+  self.assertFalse(any(call.args[2]=='fixedFont' for call in config.call_args_list))
+  self.assertFalse(any('monospace-font-name' in call.args[0] for call in run.call_args_list))
+  self.assertTrue(any(call.args[2]=='menuFont' for call in config.call_args_list))
 if __name__=='__main__':unittest.main()

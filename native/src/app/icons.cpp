@@ -75,6 +75,9 @@ const Mapping kMap[] = {
     {"mmsys.cpl", 3004, "Categories", "preferences-desktop-sound"},   // (Sounds and Audio Devices' own)   // (Date and Time's own; shell32 275 is the pie of Performance and Maintenance)
     {"shell32.dll", 4, "Applications", "system-file-manager org.kde.dolphin dolphin"},
     {"iexplore.exe", 32528, "Applications", "firefox org.mozilla.firefox web-browser internet-web-browser"},
+    // Quick Launch's "Show Desktop" (Show Desktop.scf: explorer.exe icon group 103). One word on
+    // purpose: KDE's lookup strips "-suffixes" and would find another theme's show-desktop first.
+    {"explorer.exe", 103, "Actions", "xpshowdesktop"},
     {"shell32.dll", 152, "MimeTypes", "text-plain text-x-generic"},
     {"shell32.dll", 1, "MimeTypes", "application-x-executable application-octet-stream unknown"},
     {"shell32.dll", 224, "MimeTypes", "video-x-generic"},
@@ -251,7 +254,7 @@ QStringList iconSourceFiles()
 }
 
 QString writeIconTheme(const QString &directory, const QString &inheritFrom, const QColor &trayGlyphs, QString *error,
-                       const QHash<QString, QMap<int, QImage>> &drawn)
+                       const QHash<QString, QMap<int, QImage>> &drawn, const QStringList &omit)
 {
     const QString inherit = (inheritFrom.isEmpty() || inheritFrom == QLatin1String(kIconThemeId)
                              || inheritFrom.contains(QRegularExpression(QStringLiteral("[\\n\\r,/]"))))
@@ -261,7 +264,9 @@ QString writeIconTheme(const QString &directory, const QString &inheritFrom, con
     QHash<QString, std::shared_ptr<PeResources>> files;
     QMap<QString, std::pair<int, QString>> directories;   // "16x16/places" -> (size, context)
     QJsonObject provenance;
-    const auto map = mappings();
+    auto map = mappings();
+    for (const QString &name : omit)
+        map.remove(name);
     // XP's plug (powercfg.cpl's 200), for charging batteries: loaded once.
     std::optional<QMap<int, QImage>> plugImages;
     auto plug = [&]() {

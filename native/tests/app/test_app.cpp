@@ -2084,6 +2084,12 @@ private Q_SLOTS:
         QVERIFY2(crisp11, qPrintable(rules));
         QVERIFY(kern);
 
+        // The installer's "smooth XP text": same families and hinting, no one-bit sizes.
+        const QString smooth = QString::fromUtf8(xptext::rules(m_realFonts, 1.0, true));
+        QVERIFY(smooth.contains(QLatin1String("<string>Tahoma OS</string>")));
+        QVERIFY(smooth.contains(QLatin1String("<const>hintfull</const>")));
+        QVERIFY(!smooth.contains(QLatin1String("name=\"antialias\"><bool>false")));
+
         // On a 200% screen fontconfig is asked about 11 px, drawn at 22: the
         // one-bit band (9-16 px drawn) is 4.5-8.5 px asked, so Tahoma 11
         // is smoothed there, as XP smoothed text that size.

@@ -8,7 +8,16 @@
         imagePath: "widgets/xp-notify"
         onRepaintNeeded: globals.xpArtVersion++
     }
-    readonly property bool xpBalloons: xpArtVersion >= 0 && xpArt.hasElement("close-normal")
+    // ...unless the installer's "Plasma notification popups" customization
+    // is on ([Notifications] balloons=false in xplasma-customizationsrc, the
+    // installer's own file). Read once, when the shell starts: the installer
+    // writes it before the desktop apply restarts the shell.
+    property Settings xpNotificationSettings: Settings {
+        location: StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/xplasma-customizationsrc"
+        category: "Notifications"
+        property bool balloons: true
+    }
+    readonly property bool xpBalloons: xpNotificationSettings.balloons && xpArtVersion >= 0 && xpArt.hasElement("close-normal")
     onXpBalloonsChanged: {
         xpCurrentId = -1;
         Qt.callLater(xpAdvance);

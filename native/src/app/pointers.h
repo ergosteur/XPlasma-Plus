@@ -57,8 +57,12 @@ QList<CursorFrame> frames(const Scheme &scheme, int role, QString *error = nullp
 QList<CursorFrame> withShadow(const QList<CursorFrame> &frames);
 
 // The theme, into `dir` (its index.theme and cursors/); `size` is what it
-// should be shown at (the Normal Select cursor's).
-bool writeTheme(const Scheme &scheme, bool shadow, const QString &dir, int *size, QString *error = nullptr);
+// should be shown at (the Normal Select cursor's). With `systemTextCursor`
+// (the installer's "Breeze text cursor" customization) XP's I-beam is left
+// out, so the text cursor comes from the inherited theme (Breeze's when it's
+// installed): XP's thin black I-beam all but disappears on dark text areas.
+bool writeTheme(const Scheme &scheme, bool shadow, const QString &dir, int *size, QString *error = nullptr,
+                bool systemTextCursor = false);
 
 // What's applied (the scheme, and whether pointers have shadows), from state.
 std::optional<std::pair<Scheme, bool>> applied(const State &state);

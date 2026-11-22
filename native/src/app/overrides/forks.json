@@ -49,7 +49,7 @@
    "notifications/global/Globals.qml": [
     {
      "find": "import org.kde.kirigami 2.11 as Kirigami\n",
-     "replace": "import org.kde.kirigami 2.11 as Kirigami\nimport org.kde.ksvg as KSvg\n"
+     "replace": "import org.kde.kirigami 2.11 as Kirigami\nimport org.kde.ksvg as KSvg\nimport QtCore\n"
     },
     {
      "find": "    id: globals\n",
@@ -217,7 +217,7 @@
    "notifications/global/Globals.qml": [
     {
      "find": "import org.kde.kirigami as Kirigami\n",
-     "replace": "import org.kde.kirigami as Kirigami\nimport org.kde.ksvg as KSvg\n"
+     "replace": "import org.kde.kirigami as Kirigami\nimport org.kde.ksvg as KSvg\nimport QtCore\n"
     },
     {
      "find": "    id: globals\n",
@@ -408,7 +408,7 @@
    "notifications/global/Globals.qml": [
     {
      "find": "import org.kde.kirigami as Kirigami\n",
-     "replace": "import org.kde.kirigami as Kirigami\nimport org.kde.ksvg as KSvg\n"
+     "replace": "import org.kde.kirigami as Kirigami\nimport org.kde.ksvg as KSvg\nimport QtCore\n"
     },
     {
      "find": "    id: globals\n",
@@ -612,7 +612,7 @@
    "notifications/global/Globals.qml": [
     {
      "find": "import org.kde.kirigami as Kirigami\n",
-     "replace": "import org.kde.kirigami as Kirigami\nimport org.kde.ksvg as KSvg\n"
+     "replace": "import org.kde.kirigami as Kirigami\nimport org.kde.ksvg as KSvg\nimport QtCore\n"
     },
     {
      "find": "    id: globals\n",

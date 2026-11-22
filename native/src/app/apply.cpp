@@ -886,7 +886,10 @@ bool applyLook(Session &session, const Look &requestedLook, const ApplyOptions &
             state.settings.insert(QStringLiteral("previousIconTheme"), previous);
         QString why;
         // (the tray's icons XP has no art for, in the tray's text colour)
-        iconTheme = writeIconTheme(build + QLatin1String("/icons"), previous, shellArt.trayTextColour, &why, spinIcons(look));
+        // (Installer customization: Firefox keeps its own icon instead of IE's.)
+        const QStringList omit = state.settings.value(QStringLiteral("installerTweaks")).toObject().value(QStringLiteral("keep_firefox_icon")).toBool()
+            ? QStringList{QStringLiteral("firefox"), QStringLiteral("org.mozilla.firefox")} : QStringList{};
+        iconTheme = writeIconTheme(build + QLatin1String("/icons"), previous, shellArt.trayTextColour, &why, spinIcons(look), omit);
         if (iconTheme.isEmpty())
             report(o, QStringLiteral("  no XP icons: %1").arg(why));
     }

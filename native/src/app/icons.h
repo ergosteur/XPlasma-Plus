@@ -29,7 +29,10 @@ QStringList iconSourceFiles();
 // (media::systemFile). With `trayGlyphs`, the tray's icons XP has no art
 // for are the inherited theme's in that colour (the tray's text colour).
 // `drawn` adds icons drawn for the look (name -> size -> image; actions).
+// `omit` names are left out, so they fall through to the inherited themes
+// (the installer's "keep Firefox's own icon" customization).
 QString writeIconTheme(const QString &directory, const QString &inherit, const QColor &trayGlyphs = QColor(),
-                       QString *error = nullptr, const QHash<QString, QMap<int, QImage>> &drawn = {});
+                       QString *error = nullptr, const QHash<QString, QMap<int, QImage>> &drawn = {},
+                       const QStringList &omit = {});
 
 } // namespace xpl

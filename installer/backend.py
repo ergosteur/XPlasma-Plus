@@ -5,6 +5,8 @@ from pathlib import Path
 BASE=Path(__file__).resolve().parent
 sys.path.insert(0,str(BASE/'lib'))
 import tomlkit
+sys.path.insert(1,str(BASE))
+import tweaks
 ACCESSORIES={'notepad','calculator','paint','picture_viewer','media_player','sound_recorder','volume_control','command_prompt','task_manager','pinball','minesweeper','solitaire'}
 from system_profile import detect,capabilities,widget_target
 STATE_NAME='kde-xp-suite'
@@ -41,7 +43,7 @@ GENERATED=['.local/share/xplasma','.local/share/themes/XPlasma-*','.local/share/
  '.local/share/plasma/plasmoids/fyi.hotsocket.*','.local/share/plasma/look-and-feel/local.xp.*','.local/share/kwin/xplasma',
  '.local/share/fonts/xp','.local/share/xp-desktop-shell','.local/share/xp-accessories','.local/share/firefox-esr-ie6',
  '.local/share/applications/fyi.hotsocket.*','.config/xplasmarc','.config/xplasma-live-colors.json',
- '.local/share/knotifications6/xplasma.notifyrc']
+ '.local/share/knotifications6/xplasma.notifyrc','.config/xplasma-customizationsrc','.local/share/applications/xp-show-desktop.desktop']
 # Of those, the ones named as XPlasma's own. After an earlier installation by
 # this installer was removed, what matches them was that one's leftovers, not
 # the user's, even though the snapshot saw it first: Remove takes it then. (A
@@ -330,7 +332,10 @@ def prepare_native(home,state,selected,theme,asset_options=None,keep_theme=False
  data['media']=str(home/'.local/share/xplasma/extracted')
  data.setdefault('settings',{})['darkMode']=(asset_options or {}).get('dark_mode',False)
  data.setdefault('settings',{})['installerFeatures']={f['id']:f['id'] in selected for f in FEATURES}
+ import tweaks as customizations
+ customizations.publish(data['settings'],(asset_options or {}).get('tweaks',[]),selected)
  path.write_text(json.dumps(data,indent=2)+'\n')
+ customizations.prepare((asset_options or {}).get('tweaks',[]),selected,run)
  if 'fonts' in selected:copy(BASE/'payload/assets/fonts',home/'.local/share/fonts/xp');run(['fc-cache','-f'])
  build=state/'build'
  phase('Preparing desktop components — first installation may take several minutes')
@@ -348,7 +353,8 @@ def prepare_native(home,state,selected,theme,asset_options=None,keep_theme=False
  if 'fonts' in selected:
   if shutil.which('gsettings'):
    run(['gsettings','set','org.gnome.desktop.interface','font-name','Tahoma OS 8'],check=False)
-   run(['gsettings','set','org.gnome.desktop.interface','monospace-font-name','Lucida Console 10'],check=False)
+   if 'own_fixed_font' not in customizations.active((asset_options or {}).get('tweaks',[]),selected):
+    run(['gsettings','set','org.gnome.desktop.interface','monospace-font-name','Lucida Console 10'],check=False)
  if 'theme_manager' in selected:
   for p in (state/'runtime/share/applications').glob('*.desktop'):
    text=p.read_text().replace('Exec=xplasma-edit','Exec="'+str(state/'runtime/bin/xplasma-edit')+'"')
@@ -382,11 +388,15 @@ def basic(home,selected,native=False,asset_options=None):
   font_rules=home/'.config/fontconfig/conf.d/99-xp-fonts.conf'
   font_rules.parent.mkdir(parents=True,exist_ok=True)
   font_rules.write_text('<?xml version="1.0"?><fontconfig><!-- XP interface fonts are selected explicitly; keep system generic defaults. --></fontconfig>\n')
-  for key,value in {'font':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0','menuFont':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0','smallestReadableFont':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0','toolBarFont':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0','fixedFont':'Lucida Console,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0'}.items():config('kdeglobals','General',key,value)
+  import tweaks as customizations
+  own_fixed='own_fixed_font' in customizations.active((asset_options or {}).get('tweaks',[]),selected)
+  fonts={'font':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0','menuFont':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0','smallestReadableFont':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0','toolBarFont':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0','fixedFont':'Lucida Console,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0'}
+  if own_fixed:del fonts['fixedFont']
+  for key,value in fonts.items():config('kdeglobals','General',key,value)
   if not native:
    for key in ['activeFont','inactiveFont']:config('kdeglobals','WM',key,'Trebuchet MS,10,-1,5,700,0,0,0,0,0,0,0,0,0,0,1,,0,0')
   if shutil.which('gsettings'):
-   for key,value in [('font-name','Tahoma OS 8'),('monospace-font-name','Lucida Console 10')]:run(['gsettings','set','org.gnome.desktop.interface',key,value],check=False)
+   for key,value in [('font-name','Tahoma OS 8')]+([] if own_fixed else [('monospace-font-name','Lucida Console 10')]):run(['gsettings','set','org.gnome.desktop.interface',key,value],check=False)
   run(['fc-cache','-f'])
   # (Before any later password prompt: the login and boot screens'.)
   restart_auth_agent()
@@ -659,7 +669,10 @@ def install(selected,theme,asset_options=None):
   # Dark mode is a Properties setting after installation: keep today's.
   try:asset_options['dark_mode']=json.loads((home/'.local/share/xplasma/state.json').read_text()).get('settings',{}).get('darkMode',asset_options.get('dark_mode',False))
   except (OSError,ValueError):pass
+  # Customizations not given on the command line: keep the installed ones.
+  if asset_options.get('tweaks') is None:asset_options['tweaks']=list((previous.get('asset_options') or {}).get('tweaks',[]))
   log('Upgrading the installed '+str((previous.get('edition') or {}).get('version','XP Suite'))+' in place; the original settings backup is kept.')
+ asset_options['tweaks']=sorted(asset_options.get('tweaks') or [])
  phase('Preparing Linux dependencies — authentication may be requested')
  if detect()['family'] and selected&(NATIVE|ACCESSORIES|{'login','boot','firefox','explorer','control_panel','tray','caption_animation','icons'}):
   import build_cache
@@ -727,6 +740,7 @@ def install(selected,theme,asset_options=None):
    phase('Installing selected login and boot screens');root('screens',selected,upgrade=bool(installed&{'login','boot'}))
   if 'welcome_splash' in selected:phase('Installing XP Welcome desktop splash');welcome_splash(home)
   if 'taskbar' in selected:phase('Checking the XP taskbar');verify_taskbar()
+  if tweaks.active(asset_options['tweaks'],selected):phase('Applying customizations');apply_tweaks(asset_options['tweaks'],selected)
   snapshot.finish()
   edition=json.loads((BASE/'edition.json').read_text()) if (BASE/'edition.json').is_file() else None
   result={'version':4,'edition':edition,'features':sorted(selected),'theme':theme,'asset_options':asset_options}
@@ -790,6 +804,7 @@ def rebuild():
   prepare_native(home,state,selected,previous['theme'],asset_options,keep_theme=True)
   if 'caption_animation' in selected:phase('Rebuilding the XP caption animation');caption_animation(home)
   if 'taskbar' in selected:phase('Checking the XP taskbar');verify_taskbar()
+  if tweaks.active(asset_options.get('tweaks',[]),selected):phase('Applying customizations');apply_tweaks(asset_options.get('tweaks',[]),selected)
   previous['rebuilds']=previous.get('rebuilds',[])+[{'plasma':'.'.join(map(str,detect().get('plasma',()))),'edition':previous.get('edition')}]
   record.write_text(json.dumps(previous,indent=2)+'\n')
   shutil.rmtree(rollback,ignore_errors=True)
@@ -900,10 +915,13 @@ def uninstall(delete_backups=False):
  log('Managed settings restored where they still matched the installed values. Linux dependencies are retained. '
      +('Settings backups were deleted. ' if delete_backups else 'Settings backups are kept in '+str(state)+'. ')+'Reopen applications.')
  return 0
+def apply_tweaks(chosen,selected):
+ tweaks.apply(chosen,selected,run,lambda script:run([kdbus(),'org.kde.plasmashell','/PlasmaShell','org.kde.PlasmaShell.evaluateScript',script]),log,home=Path.home(),qdbus=kdbus())
 def main():
- p=argparse.ArgumentParser();p.add_argument('action',choices=['install','uninstall','check','rebuild']);p.add_argument('--features',default='');p.add_argument('--theme',default='Luna Blue');p.add_argument('--hidpi-icons',action='store_true');p.add_argument('--hires-wallpapers',action='store_true');p.add_argument('--dark-mode',action='store_true');p.add_argument('--delete-backups',action='store_true');a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('action',choices=['install','uninstall','check','rebuild']);p.add_argument('--features',default='');p.add_argument('--theme',default='Luna Blue');p.add_argument('--hidpi-icons',action='store_true');p.add_argument('--hires-wallpapers',action='store_true');p.add_argument('--dark-mode',action='store_true');p.add_argument('--delete-backups',action='store_true')
+ p.add_argument('--tweaks',default=None,help='comma-separated customization ids (see tweaks.py); omitted on an upgrade = keep the installed ones');a=p.parse_args()
  selected=validate_selection([x for x in a.features.split(',') if x],a.theme) if a.action!='uninstall' else set()
- if a.action=='install':return install(selected,a.theme,{'hidpi_icons':a.hidpi_icons,'hires_wallpapers':a.hires_wallpapers,'dark_mode':a.dark_mode})
+ if a.action=='install':return install(selected,a.theme,{'hidpi_icons':a.hidpi_icons,'hires_wallpapers':a.hires_wallpapers,'dark_mode':a.dark_mode,'tweaks':None if a.tweaks is None else tweaks.parse(a.tweaks)})
  if a.action=='uninstall':return uninstall(a.delete_backups)
  if a.action=='rebuild':return rebuild()
  preflight(selected);verify();log('Preflight passed; no settings changed.');return 0

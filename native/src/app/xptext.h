@@ -17,8 +17,12 @@ namespace xpl::xptext {
 // checks Tahoma 11 on a 200% screen as 11 px and draws it at 22): so the
 // sizes are divided by the scale, and the smoothing falls where XP's would
 // on a screen of that many pixels -- as XP's Large Fonts smoothed the bigger
-// text.
-QByteArray rules(const QString &fontsDir, double scale = 1.0);
+// text. With `smooth` (the installer's "smooth XP text" customization) the
+// sizes XP drew without antialiasing are smoothed too: the families keep XP's
+// hinting and metrics, only the one-bit rendering is left out.
+QByteArray rules(const QString &fontsDir, double scale = 1.0, bool smooth = false);
+// Whether the installer's "smooth XP text" customization is on (state settings).
+bool smoothText(const State &state);
 
 // The main screen's scale (1, 1.25, 2...): KWin's saved setup for the
 // screens connected now (~/.config/kwinoutputconfig.json and the kernel's

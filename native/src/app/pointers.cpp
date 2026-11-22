@@ -296,11 +296,13 @@ QList<CursorFrame> withShadow(const QList<CursorFrame> &frames)
     return out;
 }
 
-bool writeTheme(const Scheme &scheme, bool shadow, const QString &dir, int *size, QString *error)
+bool writeTheme(const Scheme &scheme, bool shadow, const QString &dir, int *size, QString *error, bool systemTextCursor)
 {
     QDir(dir).removeRecursively();
     int nominal = 32;
     for (int role = 0; role < RoleCount; ++role) {
+        if (systemTextCursor && role == IBeam)
+            continue;   // (from the inherited theme: see the header)
         QList<CursorFrame> f = frames(scheme, role, error);
         if (f.isEmpty()) {
             if (error && error->isEmpty())
@@ -354,7 +356,8 @@ bool apply(Session &session, State &state, const Scheme &scheme, bool shadow, QS
 {
     const QString id=themeId(scheme,shadow);
     int size = 32;
-    if (!writeTheme(scheme, shadow, iconsDir() + QLatin1Char('/') + id, &size, error))
+    const bool systemText = state.settings.value(QStringLiteral("installerTweaks")).toObject().value(QStringLiteral("breeze_text_cursor")).toBool();
+    if (!writeTheme(scheme, shadow, iconsDir() + QLatin1Char('/') + id, &size, error, systemText))
         return false;
     linkLegacy(id);
     const QStringList mouse{QStringLiteral("Mouse")};

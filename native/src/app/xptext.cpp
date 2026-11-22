@@ -64,7 +64,12 @@ QString ppemTests(int from, int to, double scale)
 
 } // namespace
 
-QByteArray rules(const QString &fontsDir, double scale)
+bool smoothText(const State &state)
+{
+    return state.settings.value(QStringLiteral("installerTweaks")).toObject().value(QStringLiteral("smooth_text")).toBool();
+}
+
+QByteArray rules(const QString &fontsDir, double scale, bool smooth)
 {
     if (!(scale > 0))
         scale = 1.0;
@@ -102,6 +107,8 @@ QByteArray rules(const QString &fontsDir, double scale)
                                 "  <edit mode=\"assign\" name=\"autohint\"><bool>false</bool></edit>\n"
                                 "  <edit mode=\"assign\" name=\"rgba\"><const>none</const></edit>\n"
                                 "  <edit mode=\"append\" name=\"fontfeatures\"><string>kern off</string></edit>\n </match>\n");
+        if (smooth)
+            continue;   // (no one-bit sizes: see rules() in the header)
         int from = 0;
         for (const auto &[maxPpem, behaviour] : it.value()) {
             if (!(behaviour & 0x2))   // GASP_DOGRAY
@@ -143,7 +150,7 @@ bool apply(Session &session, State &state, QString *error)
                 QFontDatabase::addApplicationFont(destination + QLatin1Char('/') + name);
     }
     const double scale = displayScale();
-    if (!write(dir + QLatin1Char('/') + QLatin1String(kRulesName), rules(paths::xpFonts(), scale))) {
+    if (!write(dir + QLatin1Char('/') + QLatin1String(kRulesName), rules(paths::xpFonts(), scale, smoothText(state)))) {
         if (error)
             *error = QStringLiteral("can't write %1/%2").arg(dir, QLatin1String(kRulesName));
         return false;
@@ -196,7 +203,9 @@ bool apply(Session &session, State &state, QString *error)
         previousFonts.insert(QStringLiteral("fixedFont"), session.readConfig(QStringLiteral("kdeglobals"), general, QStringLiteral("fixedFont")));
         state.settings.insert(QStringLiteral("previousXft"), previousFonts);
     }
-    session.writeConfig(QStringLiteral("kdeglobals"), general, QStringLiteral("fixedFont"), QStringLiteral("Lucida Console,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"));
+    // (Unless the installer's "keep your own fixed-width font" customization is on.)
+    if (!state.settings.value(QStringLiteral("installerTweaks")).toObject().value(QStringLiteral("own_fixed_font")).toBool())
+        session.writeConfig(QStringLiteral("kdeglobals"), general, QStringLiteral("fixedFont"), QStringLiteral("Lucida Console,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"));
     // Retire only unchanged global rendering overrides from earlier versions.
     // Respect any font-setting edits the user has made since installation.
     if (state.settings.value(QStringLiteral("xpTextRulesVersion")).toInt() < kRulesVersion) {
@@ -222,6 +231,7 @@ bool apply(Session &session, State &state, QString *error)
     }
     state.settings.insert(QStringLiteral("xpTextRulesVersion"), kRulesVersion);
     state.settings.insert(QStringLiteral("xpTextScale"), scale);
+    state.settings.insert(QStringLiteral("xpTextSmooth"), smoothText(state));
     setGtk4Rendering(session, state, scale);
     return true;
 }
@@ -234,11 +244,14 @@ bool refresh(Session &session, State &state)
     if (state.settings.value(QStringLiteral("xpTextRulesVersion")).toInt() < kRulesVersion)
         return apply(session, state);
     const double scale = displayScale();
-    if (qFuzzyCompare(state.settings.value(QStringLiteral("xpTextScale")).toDouble(1.0), scale))
+    const bool smooth = smoothText(state);
+    if (qFuzzyCompare(state.settings.value(QStringLiteral("xpTextScale")).toDouble(1.0), scale)
+        && state.settings.value(QStringLiteral("xpTextSmooth")).toBool() == smooth)
         return false;
-    if (!write(file, rules(paths::xpFonts(), scale)))
+    if (!write(file, rules(paths::xpFonts(), scale, smooth)))
         return false;
     state.settings.insert(QStringLiteral("xpTextScale"), scale);
+    state.settings.insert(QStringLiteral("xpTextSmooth"), smooth);
     setGtk4Rendering(session, state, scale);
     return true;
 }

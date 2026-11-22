@@ -59,6 +59,14 @@ class GuiTests(unittest.TestCase):
   self.assertEqual(set(self.window.selected()),{'firefox','firefox_default'})
   self.window.items['firefox_default'].setCheckState(0,g.QtCore.Qt.CheckState.Unchecked);self.assertEqual(self.window.selected(),['firefox'])
   self.window.items['firefox'].setCheckState(0,g.QtCore.Qt.CheckState.Unchecked);self.assertEqual(self.window.selected(),[])
+ def test_customizations_are_separate_and_passed_to_the_backend(self):
+  self.assertEqual(set(self.window.tweak_items),{t['id'] for t in g.tweaks.TWEAKS})
+  self.assertEqual(self.window.selected_tweaks(),[])
+  args=self.window.install_args();self.assertEqual(args[args.index('--tweaks')+1],'')
+  self.window.select_all(True);self.assertEqual(self.window.selected_tweaks(),[])
+  for item in self.window.tweak_items.values():item.setCheckState(0,g.QtCore.Qt.CheckState.Checked)
+  self.window.select_all(False);self.assertEqual(self.window.selected_tweaks(),sorted(self.window.tweak_items))
+  args=self.window.install_args();self.assertEqual(args[args.index('--tweaks')+1],','.join(sorted(self.window.tweak_items)))
  def test_install_asks_to_close_other_programs_first(self):
   box=self.window.close_programs_question()
   self.assertIn('Please close all other programs',box.text())

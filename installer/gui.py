@@ -9,6 +9,7 @@ except ImportError:
 BASE=Path(__file__).resolve().parent
 from system_profile import detect,capabilities
 import rebuild as plasma_update
+import tweaks
 FEATURES=json.loads((BASE/'features.json').read_text())
 EDITION=json.loads((BASE/'edition.json').read_text()) if (BASE/'edition.json').exists() else {}
 PROJECT_LABELS={'desktop':'XP Desktop (default)','firefox':'IE6 Firefox Theme (optional)','applications':'Windows XP Applications (optional)','tray':'XP System Tray Menus (optional)','shared':'Shared update support','extras':'Optional integrations'}
@@ -91,6 +92,20 @@ class Installer(QtWidgets.QMainWindow):
   self.lock_installed()
   if saved:self.theme.setCurrentText(saved['theme'])
   options=(saved or {}).get('asset_options',{})
+  # Optional customizations: own group, off by default, kept on upgrade. Select all/none leave them alone.
+  self.tweak_items={}
+  if tweaks.TWEAKS:
+   names={f['id']:f['name'] for f in FEATURES}
+   group=QtWidgets.QTreeWidgetItem(self.tree,['Customizations (optional)']);group.setData(0,QtCore.Qt.ItemDataRole.UserRole,'project:tweaks')
+   group.setFlags(group.flags()|QtCore.Qt.ItemFlag.ItemIsUserCheckable|QtCore.Qt.ItemFlag.ItemIsAutoTristate)
+   group.setToolTip(0,'Adjustments to the selected features. Each applies only when the features it adjusts are selected.')
+   for tweak in tweaks.TWEAKS:
+    item=QtWidgets.QTreeWidgetItem(group,[tweak['label']]);item.setData(0,QtCore.Qt.ItemDataRole.UserRole,'tweak:'+tweak['id'])
+    item.setFlags(item.flags()|QtCore.Qt.ItemFlag.ItemIsUserCheckable)
+    item.setToolTip(0,tweak['help']+'\nApplies with: '+', '.join(names.get(r,r) for r in tweak['requires'])+'.')
+    item.setCheckState(0,QtCore.Qt.CheckState.Checked if tweak['id'] in options.get('tweaks',[]) else QtCore.Qt.CheckState.Unchecked)
+    self.tweak_items[tweak['id']]=item
+   group.setExpanded(bool(options.get('tweaks')))
   quality=QtWidgets.QVBoxLayout()
   self.hidpi_icons=QtWidgets.QCheckBox('Use HiDPI icons (unchecked: original XP icons)')
   self.dark_mode=QtWidgets.QCheckBox('Dark application colors (also IE6 Firefox)')
@@ -180,6 +195,14 @@ class Installer(QtWidgets.QMainWindow):
   if name=='firefox':self.items['firefox_default'].setCheckState(0,QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked)
   self.update_summary()
  def selected(self):return [name for name,item in self.items.items() if item.checkState(0)==QtCore.Qt.CheckState.Checked and not self.support[name]]
+ def selected_tweaks(self):return sorted(name for name,item in self.tweak_items.items() if item.checkState(0)==QtCore.Qt.CheckState.Checked)
+ def install_args(self):
+  args=['--features',','.join(self.selected()),'--theme',self.theme.currentText()]
+  if self.dark_mode.isChecked():args+=['--dark-mode']
+  if self.hidpi_icons.isChecked():args+=['--hidpi-icons']
+  if self.hires_wallpapers.isChecked():args+=['--hires-wallpapers']
+  # (Always explicit, even empty: unticking every customization is a choice too.)
+  return args+['--tweaks',','.join(self.selected_tweaks())]
  def select_all(self,checked):
   for name,item in self.items.items():
    if name not in self.locked and not self.support[name]:item.setCheckState(0,QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked)
@@ -213,11 +236,7 @@ class Installer(QtWidgets.QMainWindow):
    box=self.removal_question()
    if box.exec()!=QtWidgets.QMessageBox.StandardButton.Yes:return
    if box.checkBox().isChecked():args.append('--delete-backups')
-  if action=='install':args+=['--features',','.join(self.selected()),'--theme',self.theme.currentText()]
-  if action=='install':
-   if self.dark_mode.isChecked():args+=['--dark-mode']
-   if self.hidpi_icons.isChecked():args+=['--hidpi-icons']
-   if self.hires_wallpapers.isChecked():args+=['--hires-wallpapers']
+  if action=='install':args+=self.install_args()
   self.upgrading=action=='install' and (STATE/'installation.json').exists()
   self.report_lines=[];self.buffer='';self.attempted_features=self.selected()
   self.set_step(1);self.pages.setCurrentIndex(1);self.tip_timer.start();self.dots.start();self.current_action=action;self.terminal_log.clear();self.progress.setRange(0,0);self.tree.setEnabled(False);self.theme.setEnabled(False);self.close_button.setEnabled(False)
