@@ -75,17 +75,29 @@ public:
 #endif
         );
     }
+    // KWin 6.8 made paintWindow report whether the window was drawn (bool);
+    // a deliberately skipped window counts as handled, as KWin's own slide effect does.
+#ifdef XP_KWIN_68
+    bool paintWindow(const RenderTarget &target,const RenderViewport &viewport,EffectWindow *w,int mask,const Region &region,WindowPaintData &data) override {
+        if(w==m_window && m_restoreMin)return true; // Body becomes visible after the moving caption arrives.
+        holdSnapshot(w,data);
+        return CrossFadeEffect::paintWindow(target,viewport,w,mask,region,data);
+    }
+#else
     void paintWindow(const RenderTarget &target,const RenderViewport &viewport,EffectWindow *w,int mask,const Region &region,WindowPaintData &data) override {
-        if(w==m_window){
-            if(m_restoreMin)return; // Body becomes visible after the moving caption arrives.
-            const QRectF now=w->frameGeometry();
-            data.setCrossFadeProgress(0); // Hold the pre-transition snapshot, no crossfade.
-            data.setXScale(m_oldGeometry.width()/qMax(qreal(1),now.width()));
-            data.setYScale(m_oldGeometry.height()/qMax(qreal(1),now.height()));
-            data.setXTranslation(m_oldGeometry.x()-now.x());
-            data.setYTranslation(m_oldGeometry.y()-now.y());
-        }
+        if(w==m_window && m_restoreMin)return; // Body becomes visible after the moving caption arrives.
+        holdSnapshot(w,data);
         CrossFadeEffect::paintWindow(target,viewport,w,mask,region,data);
+    }
+#endif
+    void holdSnapshot(EffectWindow *w,WindowPaintData &data) {
+        if(w!=m_window)return;
+        const QRectF now=w->frameGeometry();
+        data.setCrossFadeProgress(0); // Hold the pre-transition snapshot, no crossfade.
+        data.setXScale(m_oldGeometry.width()/qMax(qreal(1),now.width()));
+        data.setYScale(m_oldGeometry.height()/qMax(qreal(1),now.height()));
+        data.setXTranslation(m_oldGeometry.x()-now.x());
+        data.setYTranslation(m_oldGeometry.y()-now.y());
     }
 private:
     struct Before {QRectF geometry;QRectF caption;};
