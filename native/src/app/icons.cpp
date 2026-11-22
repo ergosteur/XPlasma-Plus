@@ -564,4 +564,76 @@ QString writeIconTheme(const QString &directory, const QString &inheritFrom, con
     return pkg.directory();
 }
 
+bool mergeIconOverlay(const QString &overlay, const QString &theme)
+{
+    QFile overlayIndex(overlay + QLatin1String("/index.theme"));
+    QFile themeIndex(theme + QLatin1String("/index.theme"));
+    if (!overlayIndex.open(QIODevice::ReadOnly))
+        return true;   // (no fixes made)
+    if (!themeIndex.open(QIODevice::ReadOnly))
+        return false;
+    // Removals first, then the overlay's icons over whatever the theme has by that name.
+    QFile removed(overlay + QLatin1String("/REMOVED.txt"));
+    if (removed.open(QIODevice::ReadOnly))
+        for (const QByteArray &raw : removed.readAll().split('\n')) {
+            const QString rel = QString::fromUtf8(raw).trimmed();
+            if (rel.isEmpty() || rel.contains(QLatin1String("..")) || rel.startsWith(QLatin1Char('/')))
+                continue;
+            QFile::remove(theme + QLatin1Char('/') + rel);
+        }
+    QDirIterator it(overlay, QDir::Files | QDir::System | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        const QString file = it.next();
+        const QString rel = file.mid(overlay.size() + 1);
+        if (!rel.contains(QLatin1Char('/')))
+            continue;   // (index.theme, REMOVED.txt)
+        const QFileInfo info(file);
+        const QString dir = theme + QLatin1Char('/') + QFileInfo(rel).path();
+        QDir().mkpath(dir);
+        for (const char *ext : {".png", ".svg"})
+            QFile::remove(dir + QLatin1Char('/') + info.completeBaseName() + QLatin1String(ext));
+        const QString target = dir + QLatin1Char('/') + info.fileName();
+        if (info.isSymLink() ? !QFile::link(info.readSymLink(), target) : !QFile::copy(file, target))
+            return false;
+    }
+    // Directory sections the overlay needs, added to the theme's index (and its Directories= list).
+    QStringList lines = QString::fromUtf8(themeIndex.readAll()).split(QLatin1Char('\n'));
+    themeIndex.close();
+    QStringList dirs;
+    int directoriesLine = -1;
+    for (int i = 0; i < lines.size(); ++i) {
+        if (lines[i].startsWith(QLatin1String("Directories="))) {
+            directoriesLine = i;
+            dirs = lines[i].mid(12).split(QLatin1Char(','), Qt::SkipEmptyParts);
+        }
+    }
+    QString current;
+    QStringList added;
+    for (const QString &line : QString::fromUtf8(overlayIndex.readAll()).split(QLatin1Char('\n'))) {
+        if (line.startsWith(QLatin1Char('[')) && line.endsWith(QLatin1Char(']'))) {
+            current = line.mid(1, line.size() - 2);
+            if (dirs.contains(current)) {
+                current.clear();
+                continue;
+            }
+            dirs << current;
+            added << QString() << line;
+        } else if (!current.isEmpty() && line.contains(QLatin1Char('='))) {
+            added << line;
+        }
+    }
+    if (added.isEmpty())
+        return true;
+    if (directoriesLine < 0)
+        return false;
+    lines[directoriesLine] = QLatin1String("Directories=") + dirs.join(QLatin1Char(','));
+    while (!lines.isEmpty() && lines.last().isEmpty())
+        lines.removeLast();
+    lines << added << QString();
+    if (!themeIndex.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        return false;
+    return themeIndex.write(lines.join(QLatin1Char('\n')).toUtf8()) >= 0;
+}
+
 } // namespace xpl
+

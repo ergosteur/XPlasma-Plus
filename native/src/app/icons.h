@@ -35,4 +35,9 @@ QString writeIconTheme(const QString &directory, const QString &inherit, const Q
                        QString *error = nullptr, const QHash<QString, QMap<int, QImage>> &drawn = {},
                        const QStringList &omit = {});
 
+// The installer's icon fixes (tools/icon-fixes/overlay.py: icons, REMOVED.txt,
+// index.theme sections in `overlay`) merged into the installed theme at `theme`,
+// which the apply writes from scratch. Whether it could; nothing to do is true.
+bool mergeIconOverlay(const QString &overlay, const QString &theme);
+
 } // namespace xpl

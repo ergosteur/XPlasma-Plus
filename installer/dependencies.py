@@ -34,7 +34,7 @@ def packages(family,features,bootstrap=False,native_ready=False,caption_ready=Fa
  # including with prebuilt XP plugins and no widget build dependencies.
  extras[family]['taskbar']={'apt':'plasma-desktop plasma-widgets-addons plasma-pa','dnf':'plasma-desktop kdeplasma-addons plasma-pa','pacman':'plasma-desktop kdeplasma-addons plasma-pa','zypper':'plasma6-desktop kdeplasma6-addons plasma6-pa'}[family]
  extras[family]['control_panel']={'apt':'pulseaudio-utils network-manager','dnf':'pulseaudio-utils NetworkManager','pacman':'libpulse networkmanager','zypper':'pulseaudio-utils NetworkManager'}[family]
- extras[family]['icons']={'apt':'python3-pil','dnf':'python3-pillow','pacman':'python-pillow','zypper':'python3-Pillow'}[family]
+ extras[family]['icons']={'apt':'python3-pil librsvg2-bin','dnf':'python3-pillow librsvg2-tools','pacman':'python-pillow librsvg','zypper':'python3-Pillow rsvg-convert'}[family]
  extras[family]['caption_animation']={
  'apt':'build-essential cmake ninja-build extra-cmake-modules kwin-dev qt6-base-dev qt6-declarative-dev libdrm-dev libwayland-dev libvulkan-dev',
  'dnf':'gcc-c++ cmake ninja-build extra-cmake-modules kwin-devel qt6-qtbase-devel qt6-qtdeclarative-devel libdrm-devel wayland-devel vulkan-headers',

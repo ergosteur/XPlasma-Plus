@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+ <defs><pattern id="chk" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#e8d84a"/><rect width="4" height="4" fill="#fff59a"/><rect x="4" y="4" width="4" height="4" fill="#fff59a"/></pattern></defs>
+ <!-- window -->
+ <rect x="40" y="6" width="80" height="62" fill="#c8c8c8" stroke="#404040" stroke-width="4"/>
+ <rect x="44" y="10" width="72" height="14" fill="#10107a"/>
+ <rect x="102" y="13" width="10" height="8" fill="#c8c8c8"/><rect x="88" y="13" width="10" height="8" fill="#c8c8c8"/>
+ <rect x="44" y="26" width="72" height="38" fill="#fff"/>
+ <rect x="52" y="32" width="14" height="14" fill="#d82020" stroke="#600" stroke-width="2"/><rect x="74" y="32" width="14" height="14" fill="#18c8c8" stroke="#066" stroke-width="2"/><rect x="96" y="32" width="14" height="14" fill="#2030d8" stroke="#006" stroke-width="2"/>
+ <path d="M52 52 H66 M74 52 H88 M96 52 H110 M52 58 H66 M74 58 H88 M96 58 H110" stroke="#808080" stroke-width="3"/>
+ <!-- box: back flap, left flap, body -->
+ <path d="M8 66 L38 52 L44 68 L22 84Z" fill="#a9a437" stroke="#4a4710" stroke-width="3" stroke-linejoin="round"/>
+ <path d="M24 78 L96 78 L104 100 L104 118 L32 118 L24 100Z" fill="url(#chk)" stroke="#4a4710" stroke-width="4" stroke-linejoin="round"/>
+ <path d="M96 78 L120 70 V108 L104 118 V100Z" fill="#8a8530" stroke="#4a4710" stroke-width="4" stroke-linejoin="round"/>
+ <path d="M24 78 L8 66 V94 L24 100Z" fill="#cfc24a" stroke="#4a4710" stroke-width="3" stroke-linejoin="round"/>
+</svg>

@@ -153,6 +153,11 @@ def sync(suite, icons=None, wallpapers=None):
     if saved_icons.exists():
         shutil.copy2(saved_icons, suite / 'payload/tools/icons.tar.gz')
     shutil.copy2(ROOT / 'tools/icon-expansion/install.py', suite / 'payload/tools/xp-icons.py')
+    # Our corrections to both XP icon themes, applied after them (installer runs overlay.py).
+    fixes = suite / 'payload/tools/icon-fixes'
+    if fixes.exists():
+        shutil.rmtree(fixes)
+    shutil.copytree(ROOT / 'tools/icon-fixes', fixes, ignore=shutil.ignore_patterns('__pycache__'))
     shutil.copy2(ROOT / 'tools/cursor-sync/sync.py', suite / 'payload/tools/cursor-sync.py')
     shutil.copy2(ROOT / 'tools/desktop-behavior/xp-behavior.py', suite / 'payload/tools/xp-behavior.py')
     for name in ['xp-cursor-sync.path', 'xp-cursor-sync.service']:
