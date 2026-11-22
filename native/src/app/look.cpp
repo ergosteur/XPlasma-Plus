@@ -33,6 +33,21 @@ std::optional<Look> Look::fromStyle(const QString &path, const QString &variant,
     look.stylePath = QFileInfo(path).absoluteFilePath();
     look.variant = theme->variant();
     look.system = ClassicScheme::fromSysMetrics(*theme);
+    // Royale's colour variants with Royale's own fonts. Zune and Embedded name
+    // Microsoft Sans Serif for message boxes (which becomes Plasma's general font)
+    // and a caption two points smaller than Royale's Trebuchet MS 10/14/17;
+    // Royale Noir already matches. Chosen for this fork: the Royale family reads
+    // as one look, in XP's Tahoma and Trebuchet MS.
+    const QString styleFile = QFileInfo(path).completeBaseName().toLower();
+    if (styleFile == QLatin1String("zune") || styleFile == QLatin1String("embedded")) {
+        NonClientMetrics &m = look.system.metrics;
+        for (LogFont *f : {&m.messageFont, &m.menuFont, &m.statusFont, &look.system.icons.font})
+            if (f->face.compare(QLatin1String("Microsoft Sans Serif"), Qt::CaseInsensitive) == 0)
+                *f = LogFont::fromPoints(QStringLiteral("Tahoma"), f->points(), f->bold());
+        if (m.captionFont.face.compare(QLatin1String("Trebuchet MS"), Qt::CaseInsensitive) == 0
+            && (m.captionFont.points() == 8 || m.captionFont.points() == 12 || m.captionFont.points() == 15))
+            m.captionFont = LogFont::fromPoints(QStringLiteral("Trebuchet MS"), m.captionFont.points() + 2, true);
+    }
     look.renderer = std::make_shared<const Renderer>(theme);
 
     // Named as XP's Display Properties would show the choice.
