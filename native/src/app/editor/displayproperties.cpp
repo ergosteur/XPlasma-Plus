@@ -15,6 +15,7 @@
 #include "app/paths.h"
 #include "app/darkmode.h"
 #include "app/crisptext.h"
+#include "app/xptext.h"
 #include "app/session.h"
 #include "app/state.h"
 #include "app/startmenu.h"
@@ -205,8 +206,10 @@ DisplayProperties::DisplayProperties(QWidget *parent)
     m_themeCache->setChecked(m_appliedThemeCache);
     m_appliedDark = state.settings.value(QStringLiteral("darkMode")).toBool();
     m_darkMode->setChecked(m_appliedDark);
-    m_appliedCrisp = state.settings.value(QStringLiteral("crispText")).toBool();
-    m_crispText->setChecked(m_appliedCrisp);
+    m_appliedSmoothing = xptext::smoothingName(xptext::smoothing(state));
+    m_smoothFonts->setChecked(m_appliedSmoothing != QLatin1String("none"));
+    m_smoothMethod->setCurrentIndex(m_appliedSmoothing == QLatin1String("cleartype") ? 1 : 0);
+    m_smoothMethod->setEnabled(m_smoothFonts->isChecked());
     m_appliedHiDpiStart = state.settings.value(QLatin1String(kHiDpiStartKey)).toBool();
     m_hidpiStart->setChecked(m_appliedHiDpiStart);
     if (state.appliedKind == QLatin1String("classic")) {
@@ -721,10 +724,21 @@ QWidget *DisplayProperties::appearanceTab()
     m_darkMode = new QCheckBox(QStringLiteral("&Dark application colors"));
     m_darkMode->setToolTip(QStringLiteral("Dark backgrounds and light text for applications and IE6 Firefox; keeps the selected theme\'s titlebars and taskbar"));
     layout->addWidget(m_darkMode);
-    m_crispText = new QCheckBox(QStringLiteral("Crisp XP text (experimental)"));
-    m_crispText->setToolTip(QStringLiteral("Experimental: XP-rendered pixel Tahoma for XPlasma widgets and IE6 Firefox, with a legacy pixel-font fallback. Aligns glyph sizes to physical pixels at fractional scaling; preserves explicit document and code font choices."));
-    layout->addWidget(m_crispText);
-    connect(m_crispText,&QCheckBox::toggled,this,[this]{updateApply();});
+    // XP's Effects: "Use the following method to smooth edges of screen fonts".
+    m_smoothFonts = new QCheckBox(QStringLiteral("&Use the following method to smooth edges of screen fonts:"));
+    m_smoothFonts->setToolTip(QStringLiteral("Unchecked: no font smoothing. Applies to every application, as KDE's own font smoothing (System Settings > Fonts)."));
+    m_smoothMethod = new QComboBox;
+    m_smoothMethod->addItem(QStringLiteral("Standard"));
+    m_smoothMethod->addItem(QStringLiteral("ClearType"));
+    m_smoothMethod->setItemData(0, QStringLiteral("Greyscale smoothing. XP's interface fonts stay sharp, unsmoothed, at the small sizes their designers made them for."), Qt::ToolTipRole);
+    m_smoothMethod->setItemData(1, QStringLiteral("Subpixel (RGB) smoothing at every size: sharper on LCD screens, with faint colour at glyph edges."), Qt::ToolTipRole);
+    auto *smoothing = new QHBoxLayout;
+    smoothing->addWidget(m_smoothFonts);
+    smoothing->addWidget(m_smoothMethod);
+    smoothing->addStretch(1);
+    layout->addLayout(smoothing);
+    connect(m_smoothFonts, &QCheckBox::toggled, this, [this](bool on) { m_smoothMethod->setEnabled(on); updateApply(); });
+    connect(m_smoothMethod, &QComboBox::currentIndexChanged, this, [this] { updateApply(); });
     m_hidpiStart = new QCheckBox(QStringLiteral("Sharp Start button on &HiDPI screens"));
     m_hidpiStart->setToolTip(QStringLiteral("Draws the Start button's label and logo at the screen's own resolution when the display is scaled; XP's button stays its own pixels, made bigger."));
     layout->addWidget(m_hidpiStart);
@@ -1480,7 +1494,7 @@ bool DisplayProperties::apply()
     const bool desktopChanged = everything || !sameDesktop(desktop, m_appliedDesktop);
     const bool pointersChanged = pointersDiffer() || (everything && m_pointers.has_value());
     const bool startChanged = m_startExtras != m_appliedStartExtras;
-    const bool crispChanged = m_crispText->isChecked() != m_appliedCrisp;
+    const bool crispChanged = smoothingChoice() != m_appliedSmoothing;
     const bool hidpiChanged = m_hidpiStart->isChecked() != m_appliedHiDpiStart;
     const bool darkChanged = m_darkMode->isChecked() != m_appliedDark;
     const bool cacheChanged = m_themeCache->isChecked() != m_appliedThemeCache
@@ -1570,8 +1584,16 @@ bool DisplayProperties::apply()
         ok = runJob(this, QStringLiteral("Applying application colors"), [&](const JobContext &, QString *e) { LiveSession session; return darkmode::apply(session, l, m_darkMode->isChecked(), e); }, &error);
     }
     if (ok && crispChanged) {
-        LiveSession session;ok = crisptext::apply(session,m_crispText->isChecked(),&error);
-        if (ok) m_appliedCrisp=m_crispText->isChecked();
+        LiveSession session;
+        // (The retired "Crisp XP text" pixel fonts go with any explicit choice.)
+        if (State::load().settings.value(QStringLiteral("crispText")).toBool())
+            ok = crisptext::apply(session, false, &error);
+        State state = State::load();
+        const QString choice = smoothingChoice();
+        const auto mode = choice == QLatin1String("none") ? xptext::Smoothing::None
+                        : choice == QLatin1String("cleartype") ? xptext::Smoothing::ClearType : xptext::Smoothing::Standard;
+        if (ok) ok = xptext::setSmoothing(session, state, mode, &error) && state.save(&error);
+        if (ok) m_appliedSmoothing = choice;
     }
     if (ok) m_appliedDark = m_darkMode->isChecked();
     if (ok && startChanged)
@@ -1609,6 +1631,11 @@ bool DisplayProperties::apply()
     return ok;
 }
 
+QString DisplayProperties::smoothingChoice() const
+{
+    return !m_smoothFonts->isChecked() ? QStringLiteral("none") : m_smoothMethod->currentIndex() == 1 ? QStringLiteral("cleartype") : QStringLiteral("standard");
+}
+
 void DisplayProperties::updateApply()
 {
     m_apply->setToolTip(m_outdated ? QStringLiteral("XPlasma has been updated since this look was applied. Apply rebuilds it with this "
@@ -1617,7 +1644,7 @@ void DisplayProperties::updateApply()
     m_apply->setEnabled(m_themeCache->isChecked() != m_appliedThemeCache
                         || (m_themeCacheChosen && !State::load().settings.contains(QStringLiteral("themeCacheEnabled"))) || shiftHeld() || lookKey(look()) != m_appliedLook || !sameDesktop(wallpaper(), m_appliedDesktop)
                         || m_themeFile != m_appliedThemeFile || pointersDiffer() || m_startExtras != m_appliedStartExtras
-                        || m_linkTitleColor->isChecked()!=m_appliedTitleLink || liveStartColors()!=m_appliedLiveStart || m_sounds->pending() || m_darkMode->isChecked() != m_appliedDark || m_crispText->isChecked() != m_appliedCrisp
+                        || m_linkTitleColor->isChecked()!=m_appliedTitleLink || liveStartColors()!=m_appliedLiveStart || m_sounds->pending() || m_darkMode->isChecked() != m_appliedDark || smoothingChoice() != m_appliedSmoothing
                         || m_hidpiStart->isChecked() != m_appliedHiDpiStart);
 }
 

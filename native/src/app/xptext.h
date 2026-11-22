@@ -17,12 +17,23 @@ namespace xpl::xptext {
 // checks Tahoma 11 on a 200% screen as 11 px and draws it at 22): so the
 // sizes are divided by the scale, and the smoothing falls where XP's would
 // on a screen of that many pixels -- as XP's Large Fonts smoothed the bigger
-// text. With `smooth` (the installer's "smooth XP text" customization) the
-// sizes XP drew without antialiasing are smoothed too: the families keep XP's
-// hinting and metrics, only the one-bit rendering is left out.
-QByteArray rules(const QString &fontsDir, double scale = 1.0, bool smooth = false);
-// Whether the installer's "smooth XP text" customization is on (state settings).
-bool smoothText(const State &state);
+// text.
+//
+// `mode` is XP's "smooth edges of screen fonts" (Display Properties > Appearance):
+// None, never smoothed; Standard, greyscale except the sizes each font's gasp
+// table keeps one-bit (XP's small Tahoma); ClearType, RGB subpixel at every size.
+// With `global` (the mode was chosen, not just the default) the mode is every
+// font's, as it was XP's; otherwise only the XP families follow it.
+enum class Smoothing { None, Standard, ClearType };
+QByteArray rules(const QString &fontsDir, double scale = 1.0, Smoothing mode = Smoothing::Standard, bool global = false);
+// The mode in state (settings.fontSmoothing: "none"/"standard"/"cleartype";
+// Standard when unset), whether it was chosen, and its settings name.
+Smoothing smoothing(const State &state);
+bool smoothingChosen(const State &state);
+QString smoothingName(Smoothing mode);
+// Chooses `mode` (Display Properties): the rules written again, KDE's
+// XftAntialias/XftSubPixel set to match, running applications told.
+bool setSmoothing(Session &session, State &state, Smoothing mode, QString *error = nullptr);
 
 // The main screen's scale (1, 1.25, 2...): KWin's saved setup for the
 // screens connected now (~/.config/kwinoutputconfig.json and the kernel's

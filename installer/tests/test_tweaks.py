@@ -72,11 +72,15 @@ class Tweaks(unittest.TestCase):
 
     def test_native_tweaks_are_published_for_the_runtime(self):
         settings = {}
-        tweaks.publish(settings, ['smooth_text', 'keep_firefox_icon'], {'fonts', 'icons'})
-        self.assertTrue(settings['installerTweaks']['smooth_text'])
+        tweaks.publish(settings, ['cleartype', 'keep_firefox_icon'], {'fonts', 'icons'})
+        self.assertTrue(settings['installerTweaks']['cleartype'])
+        self.assertEqual(settings['fontSmoothing'], 'cleartype')
         self.assertTrue(settings['installerTweaks']['keep_firefox_icon'])
-        tweaks.publish(settings, ['smooth_text'], {'icons'})
-        self.assertFalse(settings['installerTweaks']['smooth_text'])
+        settings = {}
+        tweaks.publish(settings, ['cleartype'], {'icons'})
+        self.assertFalse(settings['installerTweaks']['cleartype'])
+        self.assertNotIn('fontSmoothing', settings)
+        self.assertEqual(tweaks.parse('smooth_text'), ['cleartype'])   # earlier name
 
     def test_notification_style_is_written_both_ways_before_the_shell_restarts(self):
         from unittest.mock import patch
@@ -90,6 +94,22 @@ class Tweaks(unittest.TestCase):
             self.assertIn('balloons', run.call_args.args[0])
             tweaks.prepare([], {'taskbar'}, run)
             self.assertEqual(run.call_args.args[0][-1], 'true')
+
+    def test_dolphin_toolbar_is_a_mergeable_toolbar_and_shows_the_menu_bar(self):
+        import tempfile
+        from unittest.mock import patch
+        from xml.etree import ElementTree
+        run = Mock()
+        with tempfile.TemporaryDirectory() as d, patch.object(tweaks.shutil, 'which', return_value='/usr/bin/kwriteconfig6'):
+            home = Path(d)
+            tweaks.apply(['dolphin_toolbar'], set(), run, Mock(), Mock(), home=home)
+            root = ElementTree.parse(home / '.local/share/kxmlgui5/dolphin/dolphinui.rc').getroot()
+            self.assertEqual(root.get('version'), '1')   # older than any Dolphin's: merged, not replacing
+            self.assertIsNone(root.find('MenuBar'))
+            actions = [a.get('name') for a in root.find('ToolBar').iter('Action')]
+            self.assertEqual(actions[:3], ['go_back', 'go_forward', 'go_up'])
+            self.assertIn('url_navigators', actions)
+            self.assertEqual(run.call_args.args[0][-3:], ['--key', 'MenuBar', 'Enabled'])
 
 if __name__ == '__main__':
     unittest.main()

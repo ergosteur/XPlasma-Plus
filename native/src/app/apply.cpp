@@ -981,6 +981,9 @@ bool applyLook(Session &session, const Look &requestedLook, const ApplyOptions &
         }
         if (!iconTheme.isEmpty() && !install(iconTheme, iconsDest, error))
             return false;
+        // The installer's icon fixes, which this theme was just written without.
+        if (!iconTheme.isEmpty() && !mergeIconOverlay(share(QStringLiteral("icons/xplasma-fixes")), iconsDest))
+            report(o, QStringLiteral("  the installer's icon fixes couldn't be merged into the XP icons"));
         // XP's Properties on the desktop's menu: this XPlasma's editor.
         const QString editor = QCoreApplication::applicationDirPath() + QLatin1String("/xplasma-edit");
         if (!QFileInfo(editor).isExecutable())
@@ -1125,7 +1128,8 @@ bool applyLook(Session &session, const Look &requestedLook, const ApplyOptions &
     state.save();
     darkmode::publish(dark);
     maintenance::run(session,previousId);
-    if(!colorOnly && state.settings.value(QStringLiteral("crispText")).toBool())crisptext::apply(session,true);
+    // ("Crisp XP text" is retired, replaced by Display Properties' font smoothing: off where it was on.)
+    if(!colorOnly && state.settings.value(QStringLiteral("crispText")).toBool())crisptext::apply(session,false);
     report(o, QStringLiteral("  Theme update completed in %1 ms.").arg(elapsed.elapsed()));
     report(o, QStringLiteral("Done."));
     return true;

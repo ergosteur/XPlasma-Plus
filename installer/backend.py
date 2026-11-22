@@ -20,7 +20,7 @@ THEMES={'Luna Blue':('Luna/luna.msstyles','NormalColor'),'Luna Silver':('Luna/lu
  'Embedded':('Embedded/Embedded.msstyles','NormalColor')}
 USER_PATHS=['.local/share/applications/fyi.hotsocket.xp.accessories.desktop','.local/share/xp-accessories','.config/menus/applications-merged/xp-accessories.menu','.local/share/desktop-directories/xp-accessories.directory','.local/share/desktop-directories/xp-entertainment.directory','.local/share/desktop-directories/xp-games.directory','.local/share/konsole/XP Command Prompt.profile','.local/share/konsole/XP Command Prompt.colorscheme',*[('.local/share/applications/fyi.hotsocket.xp.'+key.replace('_','-')+'.desktop') for key in sorted(ACCESSORIES)],'.config/kdeglobals','.config/mimeapps.list','.config/kwinrc','.config/kwinrulesrc','.config/klaunchrc','.config/kcminputrc',
  '.config/plasmashellrc','.config/plasma-org.kde.plasma.desktop-appletsrc','.config/ksplashrc','.local/share/plasma/look-and-feel/local.xp.welcome.desktop','.config/xplasmarc','.config/plasma_workspace.notifyrc','.config/ksmserver.notifyrc',
- '.config/gtk-3.0','.config/gtk-4.0','.config/fontconfig','.config/plasma-workspace/env',
+ '.config/gtk-3.0','.config/gtk-4.0','.config/fontconfig','.config/plasma-workspace/env','.config/dolphinrc','.local/share/kxmlgui5/dolphin/dolphinui.rc',
  '.local/share/applications/fyi.hotsocket.xp.caption-animation.desktop','.config/autostart/xp-decoration-compatibility.desktop','.config/autostart/kde-xp-suite-rebuild.desktop','.config/systemd/user/xp-session-theme.path','.config/systemd/user/xp-session-theme.service',
  '.config/systemd/user/xp-cursor-sync.path','.config/systemd/user/xp-cursor-sync.service','.config/autostart/xp-theme-watch.desktop',
  '.local/share/plasma','.local/share/knotifications6/xplasma.notifyrc','.local/share/aurorae','.local/share/kwin','.local/share/color-schemes',
@@ -501,6 +501,16 @@ def desktop_updates(home,state,selected,asset_options=None):
    spec=importlib.util.spec_from_file_location('xp_icons',tools/'xp-icons.py')
    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
    module.copy_layer(Path(temp)/'xplasma-xp-extended',home,hidpi=(asset_options or {}).get('hidpi_icons',False));module.repair(home)
+  # Corrections on top of both XP icon themes (tools/icon-fixes): kept as an overlay
+  # the desktop apply merges into XPlasma Primary each time it writes it again.
+  fixes=tools/'icon-fixes/overlay.py'
+  if fixes.is_file() and (home/'.local/share/icons/xplasma-icons/index.theme').is_file():
+   phase('Applying XP icon corrections');run([sys.executable,'-I',fixes])
+   # The desktop apply already restarted the shell, which has the icons before these
+   # cached: running KDE applications reload (KIconLoader's groups 0-5), the shell restarts.
+   for group in range(6):
+    run(['dbus-send','--session','--type=signal','/KIconLoader','org.kde.KIconLoader.iconChanged','int32:'+str(group)],check=False)
+   if detect()['systemd']:run(['systemctl','--user','restart','plasma-plasmashell.service'],check=False)
  if 'behavior' in selected:
   copy(tools/'outline.qml',home/'.local/share/kwin/xplasma/outline.qml')
   run([sys.executable,tools/'xp-window-outlines.py'])

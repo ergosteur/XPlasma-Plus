@@ -102,7 +102,7 @@ class Installer(QtWidgets.QMainWindow):
    for tweak in tweaks.TWEAKS:
     item=QtWidgets.QTreeWidgetItem(group,[tweak['label']]);item.setData(0,QtCore.Qt.ItemDataRole.UserRole,'tweak:'+tweak['id'])
     item.setFlags(item.flags()|QtCore.Qt.ItemFlag.ItemIsUserCheckable)
-    item.setToolTip(0,tweak['help']+'\nApplies with: '+', '.join(names.get(r,r) for r in tweak['requires'])+'.')
+    item.setToolTip(0,tweak['help']+('\nApplies with: '+', '.join(names.get(r,r) for r in tweak['requires'])+'.' if tweak['requires'] else ''))
     item.setCheckState(0,QtCore.Qt.CheckState.Checked if tweak['id'] in options.get('tweaks',[]) else QtCore.Qt.CheckState.Unchecked)
     self.tweak_items[tweak['id']]=item
    group.setExpanded(bool(options.get('tweaks')))

@@ -64,12 +64,27 @@ QString ppemTests(int from, int to, double scale)
 
 } // namespace
 
-bool smoothText(const State &state)
+Smoothing smoothing(const State &state)
 {
-    return state.settings.value(QStringLiteral("installerTweaks")).toObject().value(QStringLiteral("smooth_text")).toBool();
+    const QString chosen = state.settings.value(QStringLiteral("fontSmoothing")).toString();
+    if (chosen == QLatin1String("none"))
+        return Smoothing::None;
+    if (chosen == QLatin1String("cleartype"))
+        return Smoothing::ClearType;
+    return Smoothing::Standard;
 }
 
-QByteArray rules(const QString &fontsDir, double scale, bool smooth)
+bool smoothingChosen(const State &state)
+{
+    return state.settings.contains(QStringLiteral("fontSmoothing"));
+}
+
+QString smoothingName(Smoothing mode)
+{
+    return mode == Smoothing::None ? QStringLiteral("none") : mode == Smoothing::ClearType ? QStringLiteral("cleartype") : QStringLiteral("standard");
+}
+
+QByteArray rules(const QString &fontsDir, double scale, Smoothing mode, bool global)
 {
     if (!(scale > 0))
         scale = 1.0;
@@ -99,16 +114,37 @@ QByteArray rules(const QString &fontsDir, double scale, bool smooth)
         "<?xml version=\"1.0\"?>\n<!DOCTYPE fontconfig SYSTEM \"urn:fontconfig:fonts.dtd\">\n"
         "<!-- XPlasma interface fonts only; generic and document fonts retain system rendering. -->\n"
         "<fontconfig>\n");
+    // Display Properties' "smooth edges of screen fonts", once chosen there, is
+    // the whole desktop's, as it was XP's: every font, before the XP families'.
+    if (global) {
+        out += QStringLiteral(" <!-- Screen font smoothing: %1 (XPlasma Display Properties) -->\n").arg(smoothingName(mode));
+        if (mode == Smoothing::None)
+            out += QStringLiteral(" <match target=\"font\"><edit mode=\"assign\" name=\"antialias\"><bool>false</bool></edit></match>\n");
+        else
+            out += QStringLiteral(" <match target=\"font\"><edit mode=\"assign\" name=\"antialias\"><bool>true</bool></edit>"
+                                  "<edit mode=\"assign\" name=\"rgba\"><const>%1</const></edit>"
+                                  "<edit mode=\"assign\" name=\"lcdfilter\"><const>lcddefault</const></edit></match>\n")
+                       .arg(mode == Smoothing::ClearType ? QStringLiteral("rgb") : QStringLiteral("none"));
+    }
     for (auto it = families.cbegin(); it != families.cend(); ++it) {
         const QString family = QStringLiteral("  <test name=\"family\"><string>%1</string></test>\n").arg(escape(it.key() == QLatin1String("Tahoma") ? QStringLiteral("Tahoma OS") : it.key()));
+        // XP's hinting and spacing in every mode; ClearType's colour fringes
+        // only with ClearType (XP's Standard smoothing was greyscale).
         out += QStringLiteral(" <match target=\"font\">\n") + family
                + QStringLiteral("  <edit mode=\"assign\" name=\"hinting\"><bool>true</bool></edit>\n"
                                 "  <edit mode=\"assign\" name=\"hintstyle\"><const>hintfull</const></edit>\n"
                                 "  <edit mode=\"assign\" name=\"autohint\"><bool>false</bool></edit>\n"
-                                "  <edit mode=\"assign\" name=\"rgba\"><const>none</const></edit>\n"
-                                "  <edit mode=\"append\" name=\"fontfeatures\"><string>kern off</string></edit>\n </match>\n");
-        if (smooth)
-            continue;   // (no one-bit sizes: see rules() in the header)
+                                "  <edit mode=\"assign\" name=\"rgba\"><const>%1</const></edit>\n"
+                                "  <edit mode=\"append\" name=\"fontfeatures\"><string>kern off</string></edit>\n </match>\n")
+                     .arg(mode == Smoothing::ClearType ? QStringLiteral("rgb") : QStringLiteral("none"));
+        if (mode == Smoothing::ClearType)
+            continue;   // (smoothed at every size, as ClearType was)
+        if (mode == Smoothing::None) {   // (never smoothed)
+            out += QStringLiteral(" <match target=\"font\">\n") + family
+                   + QStringLiteral("  <edit mode=\"assign\" name=\"antialias\"><bool>false</bool></edit>\n </match>\n");
+            continue;
+        }
+        // Standard: the sizes the font's gasp table asks for no greyscale stay one-bit.
         int from = 0;
         for (const auto &[maxPpem, behaviour] : it.value()) {
             if (!(behaviour & 0x2))   // GASP_DOGRAY
@@ -117,11 +153,12 @@ QByteArray rules(const QString &fontsDir, double scale, bool smooth)
             from = maxPpem + 1;
         }
     }
-    out += QStringLiteral(" <match target=\"font\"><test name=\"family\"><string>Tahoma</string></test>"
-                          "<edit name=\"antialias\" mode=\"assign\"><bool>true</bool></edit>"
-                          "<edit name=\"hinting\" mode=\"assign\"><bool>true</bool></edit>"
-                          "<edit name=\"hintstyle\" mode=\"assign\"><const>hintfull</const></edit></match>\n"
-                          " <alias><family>sans-serif</family><prefer><family>Tahoma</family></prefer></alias>\n"
+    if (mode != Smoothing::None)
+        out += QStringLiteral(" <match target=\"font\"><test name=\"family\"><string>Tahoma</string></test>"
+                              "<edit name=\"antialias\" mode=\"assign\"><bool>true</bool></edit>"
+                              "<edit name=\"hinting\" mode=\"assign\"><bool>true</bool></edit>"
+                              "<edit name=\"hintstyle\" mode=\"assign\"><const>hintfull</const></edit></match>\n");
+    out += QStringLiteral(" <alias><family>sans-serif</family><prefer><family>Tahoma</family></prefer></alias>\n"
                           "</fontconfig>\n");
     return out.toUtf8();
 }
@@ -150,7 +187,7 @@ bool apply(Session &session, State &state, QString *error)
                 QFontDatabase::addApplicationFont(destination + QLatin1Char('/') + name);
     }
     const double scale = displayScale();
-    if (!write(dir + QLatin1Char('/') + QLatin1String(kRulesName), rules(paths::xpFonts(), scale, smoothText(state)))) {
+    if (!write(dir + QLatin1Char('/') + QLatin1String(kRulesName), rules(paths::xpFonts(), scale, smoothing(state), smoothingChosen(state)))) {
         if (error)
             *error = QStringLiteral("can't write %1/%2").arg(dir, QLatin1String(kRulesName));
         return false;
@@ -229,9 +266,16 @@ bool apply(Session &session, State &state, QString *error)
                 session.writeConfig(QStringLiteral("kdeglobals"), {group}, key, QStringLiteral("Tahoma OS,") + current.mid(7));
         }
     }
+    // A smoothing chosen in Display Properties (or by the installer) is KDE's own
+    // font setting too, so System Settings > Fonts and every application agree.
+    if (smoothingChosen(state)) {
+        const Smoothing mode = smoothing(state);
+        session.writeConfig(QStringLiteral("kdeglobals"), general, QStringLiteral("XftAntialias"), mode == Smoothing::None ? QStringLiteral("false") : QStringLiteral("true"));
+        session.writeConfig(QStringLiteral("kdeglobals"), general, QStringLiteral("XftSubPixel"), mode == Smoothing::ClearType ? QStringLiteral("rgb") : QStringLiteral("none"));
+    }
     state.settings.insert(QStringLiteral("xpTextRulesVersion"), kRulesVersion);
     state.settings.insert(QStringLiteral("xpTextScale"), scale);
-    state.settings.insert(QStringLiteral("xpTextSmooth"), smoothText(state));
+    state.settings.insert(QStringLiteral("xpTextSmooth"), QString(smoothingName(smoothing(state)) + (smoothingChosen(state) ? QStringLiteral("!") : QString())));
     setGtk4Rendering(session, state, scale);
     return true;
 }
@@ -244,11 +288,11 @@ bool refresh(Session &session, State &state)
     if (state.settings.value(QStringLiteral("xpTextRulesVersion")).toInt() < kRulesVersion)
         return apply(session, state);
     const double scale = displayScale();
-    const bool smooth = smoothText(state);
+    const QString smooth = smoothingName(smoothing(state)) + (smoothingChosen(state) ? QStringLiteral("!") : QString());
     if (qFuzzyCompare(state.settings.value(QStringLiteral("xpTextScale")).toDouble(1.0), scale)
-        && state.settings.value(QStringLiteral("xpTextSmooth")).toBool() == smooth)
+        && state.settings.value(QStringLiteral("xpTextSmooth")).toString() == smooth)
         return false;
-    if (!write(file, rules(paths::xpFonts(), scale, smooth)))
+    if (!write(file, rules(paths::xpFonts(), scale, smoothing(state), smoothingChosen(state))))
         return false;
     state.settings.insert(QStringLiteral("xpTextScale"), scale);
     state.settings.insert(QStringLiteral("xpTextSmooth"), smooth);
@@ -359,6 +403,17 @@ void revert(Session &session, State &state)
     setGtk4Rendering(session, state, 1.0);   // (the user's own back)
     state.settings.remove(QStringLiteral("xpTextScale"));
     state.settings.remove(QStringLiteral("xpTextRulesVersion"));
+}
+
+bool setSmoothing(Session &session, State &state, Smoothing mode, QString *error)
+{
+    state.settings.insert(QStringLiteral("fontSmoothing"), smoothingName(mode));
+    if (!apply(session, state, error))
+        return false;
+    // Running KDE applications (and kde-gtk-config, for GTK) read the fonts again.
+    session.run({QStringLiteral("dbus-send"), QStringLiteral("--session"), QStringLiteral("--type=signal"), QStringLiteral("/KGlobalSettings"),
+                 QStringLiteral("org.kde.KGlobalSettings.notifyChange"), QStringLiteral("int32:1"), QStringLiteral("int32:0")});
+    return true;
 }
 
 } // namespace xpl::xptext

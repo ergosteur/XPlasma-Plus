@@ -161,8 +161,11 @@ private:
     QComboBox *m_style, *m_colour, *m_size;
     QPushButton *m_advanced, *m_extras;
     bool m_appliedDark = false;
-    bool m_appliedCrisp = false;
-    QCheckBox *m_crispText;
+    // XP's "Use the following method to smooth edges of screen fonts" (xptext::Smoothing).
+    QString m_appliedSmoothing;
+    QCheckBox *m_smoothFonts;
+    QComboBox *m_smoothMethod;
+    QString smoothingChoice() const;
     bool m_appliedHiDpiStart = false;
     QCheckBox *m_hidpiStart;
     QCheckBox *m_themeCache;

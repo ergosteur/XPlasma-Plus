@@ -2084,11 +2084,21 @@ private Q_SLOTS:
         QVERIFY2(crisp11, qPrintable(rules));
         QVERIFY(kern);
 
-        // The installer's "smooth XP text": same families and hinting, no one-bit sizes.
-        const QString smooth = QString::fromUtf8(xptext::rules(m_realFonts, 1.0, true));
-        QVERIFY(smooth.contains(QLatin1String("<string>Tahoma OS</string>")));
-        QVERIFY(smooth.contains(QLatin1String("<const>hintfull</const>")));
-        QVERIFY(!smooth.contains(QLatin1String("name=\"antialias\"><bool>false")));
+        // XP's three smoothing choices. ClearType: same families and hinting, RGB, no one-bit sizes.
+        const QString clear = QString::fromUtf8(xptext::rules(m_realFonts, 1.0, xptext::Smoothing::ClearType));
+        QVERIFY(clear.contains(QLatin1String("<string>Tahoma OS</string>")));
+        QVERIFY(clear.contains(QLatin1String("<const>hintfull</const>")));
+        QVERIFY(clear.contains(QLatin1String("<const>rgb</const>")));
+        QVERIFY(!clear.contains(QLatin1String("name=\"antialias\"><bool>false")));
+        QVERIFY(!clear.contains(QLatin1String("Screen font smoothing")));   // (not chosen: XP families only)
+        // None: the XP families never smoothed; chosen, every font.
+        const QString none = QString::fromUtf8(xptext::rules(m_realFonts, 1.0, xptext::Smoothing::None, true));
+        QVERIFY(none.contains(QLatin1String("Screen font smoothing: none")));
+        QVERIFY(none.contains(QLatin1String("name=\"antialias\"><bool>false")));
+        QVERIFY(!none.contains(QLatin1String("<bool>true</bool></edit><edit name=\"hinting\"")));
+        // Standard is the default, and chosen it makes every font greyscale.
+        QCOMPARE(xptext::rules(m_realFonts), xptext::rules(m_realFonts, 1.0, xptext::Smoothing::Standard));
+        QVERIFY(QString::fromUtf8(xptext::rules(m_realFonts, 1.0, xptext::Smoothing::Standard, true)).contains(QLatin1String("<const>none</const></edit><edit mode=\"assign\" name=\"lcdfilter\"")));
 
         // On a 200% screen fontconfig is asked about 11 px, drawn at 22: the
         // one-bit band (9-16 px drawn) is 4.5-8.5 px asked, so Tahoma 11

@@ -20,10 +20,11 @@ TWEAKS = [
      'help': "XP's Quick Launch Show Desktop button, first in the row, with XP's own icon. "
              "It toggles Plasma's Show Desktop (minimise or restore all windows).",
      'requires': ['taskbar', 'icons']},
-    {'id': 'smooth_text',
-     'label': 'Smooth XP fonts at all sizes',
-     'help': 'XP drew Tahoma, Trebuchet MS and Lucida Console without antialiasing at small sizes, and the XP '
-             'fonts do the same here. Smooth them instead; their XP hinting and spacing stay.',
+    {'id': 'cleartype',
+     'label': 'Smooth screen fonts with ClearType',
+     'help': "XP's ClearType font smoothing (Display Properties > Appearance), for every application: "
+             'RGB subpixel smoothing at every size, including the small XP interface fonts XP otherwise drew '
+             'unsmoothed. Can be changed later in XPlasma Plus Properties.',
      'requires': ['fonts']},
     {'id': 'keep_firefox_icon',
      'label': "Keep Firefox's own icon",
@@ -45,6 +46,11 @@ TWEAKS = [
      'help': 'The XP fonts make Lucida Console 10 the fixed-width font (terminals, editors) and set it again on '
              'every theme change. Keep the one chosen in System Settings instead.',
      'requires': ['fonts']},
+    {'id': 'dolphin_toolbar',
+     'label': 'Dolphin: Explorer-like toolbar and menu bar',
+     'help': "Dolphin's main toolbar as Back, Forward, Up | Search, View, Location bar, Split, Terminal, "
+             'New Folder, Stash, Menu, and its menu bar shown (File, Edit, View...) as in XP\'s Explorer.',
+     'requires': []},
 ]
 FIREFOX_ICONS = ('firefox', 'org.mozilla.firefox')
 CONFIG = 'xplasma-customizationsrc'   # ~/.config; read by the patched desktop QML
@@ -52,9 +58,12 @@ IDS = {t['id'] for t in TWEAKS}
 BY_ID = {t['id']: t for t in TWEAKS}
 
 
+ALIASES = {'smooth_text': 'cleartype'}   # earlier names, still accepted (a saved installation's)
+
+
 def parse(text):
     """Comma-separated ids from the command line -> sorted list; unknown ids are an error."""
-    chosen = sorted({x.strip() for x in (text or '').split(',') if x.strip()})
+    chosen = sorted({ALIASES.get(x.strip(), x.strip()) for x in (text or '').split(',') if x.strip()})
     unknown = [x for x in chosen if x not in IDS]
     if unknown:
         raise ValueError('Unknown customization: ' + ', '.join(unknown))
@@ -68,8 +77,12 @@ def active(chosen, selected):
 
 def publish(settings, chosen, selected):
     """Record every tweak's effective state for the native runtime."""
-    on = set(active(chosen, selected))
+    on = set(active([ALIASES.get(t, t) for t in chosen], selected))
     settings['installerTweaks'] = {t['id']: t['id'] in on for t in TWEAKS}
+    # ClearType is Display Properties' font smoothing: chosen here, it is the desktop's
+    # setting from now on (Properties can change it later; unticked here, it's left alone).
+    if 'cleartype' in on:
+        settings['fontSmoothing'] = 'cleartype'
 
 
 def prepare(chosen, selected, run):
@@ -111,6 +124,20 @@ def show_desktop_entry(qdbus):
             'Categories=Utility;\nNoDisplay=true\nX-XPlasma-Customization=show_desktop_button\n')
 
 
+DOLPHIN_TOOLBAR = ['go_back', 'go_forward', 'go_up', None, 'toggle_search', 'view_settings', 'url_navigators',
+                   'split_view', 'show_terminal_panel', 'create_dir', 'split_stash', 'hamburger_menu']
+
+
+def dolphin_ui():
+    # A deliberately old version: KXmlGui then merges this toolbar into whatever
+    # dolphinui.rc the installed Dolphin ships, instead of replacing its menus.
+    items = ''.join('  <Separator/>\n' if a is None else f'  <Action name="{a}"/>\n' for a in DOLPHIN_TOOLBAR)
+    return ('<!DOCTYPE gui SYSTEM "kpartgui.dtd">\n<gui name="dolphin" version="1" translationDomain="kxmlgui6">\n'
+            ' <ToolBar name="mainToolBar" noMerge="1" alreadyVisited="1">\n'
+            '  <text context="@title:menu" translationDomain="dolphin">Main Toolbar</text>\n' + items +
+            ' </ToolBar>\n</gui>\n')
+
+
 def apply(chosen, selected, run, shell_script, log, home=None, qdbus='qdbus6'):
     """Apply the installer-side tweaks. run/shell_script/log come from backend.py."""
     on = set(active(chosen, selected))
@@ -134,3 +161,11 @@ def apply(chosen, selected, run, shell_script, log, home=None, qdbus='qdbus6'):
         if removed and shutil.which('gtk-update-icon-cache'):
             run(['gtk-update-icon-cache', '-f', '-q', str(layer)], check=False)
         log('Customization: Firefox keeps its own icon.')
+    if 'dolphin_toolbar' in on and home is not None:
+        ui = home / '.local/share/kxmlgui5/dolphin/dolphinui.rc'
+        ui.parent.mkdir(parents=True, exist_ok=True)
+        ui.write_text(dolphin_ui())
+        writer = shutil.which('kwriteconfig6') or shutil.which('kwriteconfig5')
+        if writer:
+            run([writer, '--file', 'dolphinrc', '--group', 'MainWindow', '--key', 'MenuBar', 'Enabled'])
+        log('Customization: Dolphin toolbar and menu bar set (takes effect when Dolphin next starts).')
