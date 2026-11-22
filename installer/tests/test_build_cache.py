@@ -40,6 +40,21 @@ class BuildCacheTests(unittest.TestCase):
   for index in range(4):(plugins/(str(index)+'.so')).write_bytes((self.build/'runtime/lib/xplasma/qt6/styles/libxplasma.so').read_bytes())
   folder=cache.store(self.suite,self.build,'taskbar',self.root/'cache',self.profile)
   self.assertEqual(cache.find(self.suite,'core',self.profile,self.root/'cache'),folder)
+ def test_taskbar_runtime_holds_exactly_the_recipe_widgets(self):
+  # Not a fixed four: 6.5's recipe has two widgets, and a fork may add one.
+  import json
+  plugins=self.build/'runtime/lib/xplasma/forks/6.6/plasma/applets';plugins.mkdir(parents=True)
+  names=['org.kde.panel','org.kde.plasma.keyboardlayout','org.kde.plasma.notifications','org.kde.plasma.systemtray','org.kde.plasma.taskmanager']
+  for name in names:(plugins/(name+'.so')).write_bytes((self.build/'runtime/lib/xplasma/qt6/styles/libxplasma.so').read_bytes())
+  (self.build/'widget-components.json').write_text(json.dumps([{'path':'lib/xplasma/forks/6.6/plasma/applets/'+n+'.so','identity':{}} for n in names]))
+  with patch.object(cache,'store_component'):folder=cache.store(self.suite,self.build,'taskbar',self.root/'cache',self.profile)
+  expected=cache.identity(self.suite,'taskbar',self.profile)
+  self.assertTrue(cache.validate(folder,expected))
+  self.assertEqual(json.loads((folder/'manifest.json').read_text())['widgets'],sorted(n+'.so' for n in names))
+  # A widget missing from the package (manifest rewritten to match) is still caught.
+  data=json.loads((folder/'manifest.json').read_text());(folder/'runtime/lib/xplasma/forks/6.6/plasma/applets/org.kde.panel.so').unlink()
+  data['files']=cache.inventory(folder/'runtime');(folder/'manifest.json').write_text(json.dumps(data))
+  self.assertFalse(cache.validate(folder,expected))
  def test_prebuilt_does_not_request_compiler_or_kwin_sdk(self):
   import dependencies
   selected={'desktop','apps','taskbar','caption_animation'}

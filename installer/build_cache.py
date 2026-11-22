@@ -57,7 +57,12 @@ def validate(folder,expected):
    if name.startswith('bin/') and not os.access(runtime/name,os.X_OK):return False
   if expected['kind']=='taskbar':
    series='.'.join(map(str,expected['plasma']))
-   if len(list((runtime/'lib/xplasma/forks'/series/'plasma/applets').glob('*.so')))!=4:return False
+   built=sorted(p.name for p in (runtime/'lib/xplasma/forks'/series/'plasma/applets').glob('*.so'))
+   # The series recipe decides how many widgets there are (6.5 has two, a fork
+   # may add one); manifests written before that was recorded expect the four.
+   if 'widgets' in data:
+    if not data['widgets'] or built!=sorted(data['widgets']):return False
+   elif len(built)!=4:return False
   return True
  except (OSError,ValueError,KeyError,RuntimeError):return False
 
@@ -121,6 +126,9 @@ def store(suite,build,kind,destination=None,profile=None,caption=None):
    if not metadata['caption']:raise RuntimeError('Cannot identify the caption effect ABI.')
    target=folder/'runtime/lib/xplasma/caption/xp-caption-animation.so';target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(caption,target)
   metadata['files']=inventory(folder/'runtime')
+  records=Path(build)/'widget-components.json'
+  if kind=='taskbar' and records.exists():
+   metadata['widgets']=sorted(Path(record['path']).name for record in json.loads(records.read_text()))
   (folder/'manifest.json').write_text(json.dumps(metadata,indent=2)+'\n')
   if not validate(folder,expected):raise RuntimeError('Incomplete native runtime; prebuilt package was not saved.')
   target=root/key(expected)
