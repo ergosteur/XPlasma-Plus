@@ -13,6 +13,7 @@
 #include <QDir>
 #include <QPainter>
 
+#include <algorithm>
 #include <cmath>
 
 namespace xpl {
@@ -444,7 +445,17 @@ QByteArray colors(const Look &look, const PanelArt &art)
     group("Header", s.colour(u"ButtonFace"), s.colour(u"WindowText"), s.colour(u"GrayText"));
     group("Button", s.colour(u"ButtonFace"), s.colour(u"ButtonText"), s.colour(u"GrayText"));
     group("View", s.colour(u"Window"), s.colour(u"WindowText"), s.colour(u"GrayText"));
-    group("Complementary", art.panelColour, art.textColour, art.textColour);
+    // Plasma's lock and logout screens tint their background lighter or darker as
+    // this set's background looks light or dark, judged by its brightest channel
+    // alone (WallpaperFader: max(r,g,b) > 0.5): Luna's taskbar blue (38,96,217)
+    // is "light", so the screen behind white text was brightened 1.6x and the text
+    // all but vanished. With light text, the same hue darker enough to read as dark.
+    QColor complementary = art.panelColour;
+    const double brightest = std::max({complementary.redF(), complementary.greenF(), complementary.blueF()});
+    if (art.textColour.lightnessF() > 0.5 && brightest > 0.5)
+        complementary = QColor::fromRgbF(float(complementary.redF() * 0.49 / brightest), float(complementary.greenF() * 0.49 / brightest),
+                                         float(complementary.blueF() * 0.49 / brightest));
+    group("Complementary", complementary, art.textColour, art.textColour);
     out += QStringLiteral("[Colors:Selection]\nBackgroundNormal=%1\nForegroundNormal=%2\n\n")
                .arg(rgb(s.colour(u"Hilight")), rgb(s.colour(u"HilightText")));
     out += QStringLiteral("[Colors:Tooltip]\nBackgroundNormal=%1\nForegroundNormal=%2\n\n")

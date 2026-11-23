@@ -634,8 +634,8 @@ QString versionedId(const Look &look,const State &state)
 {
     QByteArray data=styleDigest(look.stylePath)+look.variant.toUtf8()+QJsonDocument(state.settings.value(QLatin1String(kStartButtonKey)).toObject()).toJson();
     if(look.classic()) {ThemeFile profile;look.system.writeTo(profile);data+=profile.toBytes();}
-    // Increment when the generated SVG/layout format changes.
-    const QString hash=QString::fromLatin1(QCryptographicHash::hash(QByteArray(data+"assets-v2"),QCryptographicHash::Sha256).toHex().left(24));
+    // Increment when the generated SVG/layout format changes. (v3: taskbar theme's Complementary background kept dark behind light text, panel.cpp)
+    const QString hash=QString::fromLatin1(QCryptographicHash::hash(QByteArray(data+"assets-v3"),QCryptographicHash::Sha256).toHex().left(24));
     QColor active(Qt::transparent), inactive(Qt::transparent);int x=0,y=0;
     if(look.renderer) {
         const PartRef ref{QStringLiteral("window"),schema::partId(u"window",u"caption"),1,{}};
