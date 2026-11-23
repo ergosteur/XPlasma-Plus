@@ -552,14 +552,12 @@ def user_pictures(home):
  copy(BASE/'payload/assets/user-pictures',home/'.local/share/plasma/avatars/windows-xp')
  log('XP user pictures added to System Settings → Users → Change avatar; current picture preserved.')
 
-def lock_screen_wallpaper(home):
+def lock_screen_wallpaper(home,state):
  # Plasma's own lock screen keeps the distribution's wallpaper, which can be so
- # light (Fedora's) that its white text is barely readable. With XP's wallpaper
- # it reads, and matches the desktop. (The XP lock screen has its own.)
- bliss=home/'.local/share/xplasma/assets/wallpapers/Bliss.jpg'
- if not bliss.is_file():return
- config('kscreenlockerrc','Greeter','WallpaperPlugin','org.kde.image')
- run([detect()['writer'],'--file','kscreenlockerrc','--group','Greeter','--group','Wallpaper','--group','org.kde.image','--group','General','--key','Image',bliss.as_uri()])
+ # light (Fedora's) that its white text is barely readable: XP's Welcome screen
+ # instead (installer/lockscreen.py; settings only, Plasma's files untouched).
+ import lockscreen
+ lockscreen.apply(home,state/'templates',detect()['writer'],run,log)
 def lock_screen(home,state,upgrade=False):
  src=Path('/usr/share/plasma/shells/org.kde.plasma.desktop');dest=home/'.local/share/plasma/shells/org.kde.plasma.desktop'
  # (Its own shell from the release being upgraded: links to the system's
@@ -757,7 +755,7 @@ def install(selected,theme,asset_options=None):
    run(['kwriteconfig6','--file','ksplashrc','--group','KSplash','--key','Engine','none'])
    phase('Installing selected login and boot screens');root('screens',selected,upgrade=bool(installed&{'login','boot'}))
   if 'welcome_splash' in selected:phase('Installing XP Welcome desktop splash');welcome_splash(home)
-  if 'wallpaper' in selected and 'lock' not in selected:lock_screen_wallpaper(home)
+  if 'wallpaper' in selected and 'lock' not in selected:lock_screen_wallpaper(home,state)
   if 'taskbar' in selected:phase('Checking the XP taskbar');verify_taskbar()
   if tweaks.active(asset_options['tweaks'],selected):phase('Applying customizations');apply_tweaks(asset_options['tweaks'],selected)
   snapshot.finish()
