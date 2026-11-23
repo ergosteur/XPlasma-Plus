@@ -20,7 +20,7 @@ THEMES={'Luna Blue':('Luna/luna.msstyles','NormalColor'),'Luna Silver':('Luna/lu
  'Embedded':('Embedded/Embedded.msstyles','NormalColor')}
 USER_PATHS=['.local/share/applications/fyi.hotsocket.xp.accessories.desktop','.local/share/xp-accessories','.config/menus/applications-merged/xp-accessories.menu','.local/share/desktop-directories/xp-accessories.directory','.local/share/desktop-directories/xp-entertainment.directory','.local/share/desktop-directories/xp-games.directory','.local/share/konsole/XP Command Prompt.profile','.local/share/konsole/XP Command Prompt.colorscheme',*[('.local/share/applications/fyi.hotsocket.xp.'+key.replace('_','-')+'.desktop') for key in sorted(ACCESSORIES)],'.config/kdeglobals','.config/mimeapps.list','.config/kwinrc','.config/kwinrulesrc','.config/klaunchrc','.config/kcminputrc',
  '.config/plasmashellrc','.config/plasma-org.kde.plasma.desktop-appletsrc','.config/ksplashrc','.local/share/plasma/look-and-feel/local.xp.welcome.desktop','.config/xplasmarc','.config/plasma_workspace.notifyrc','.config/ksmserver.notifyrc',
- '.config/gtk-3.0','.config/gtk-4.0','.config/fontconfig','.config/plasma-workspace/env','.config/dolphinrc','.local/share/kxmlgui5/dolphin/dolphinui.rc',
+ '.config/gtk-3.0','.config/gtk-4.0','.config/fontconfig','.config/plasma-workspace/env','.config/dolphinrc','.config/kscreenlockerrc','.local/share/kxmlgui5/dolphin/dolphinui.rc',
  '.local/share/applications/fyi.hotsocket.xp.caption-animation.desktop','.config/autostart/xp-decoration-compatibility.desktop','.config/autostart/kde-xp-suite-rebuild.desktop','.config/systemd/user/xp-session-theme.path','.config/systemd/user/xp-session-theme.service',
  '.config/systemd/user/xp-cursor-sync.path','.config/systemd/user/xp-cursor-sync.service','.config/autostart/xp-theme-watch.desktop',
  '.local/share/plasma','.local/share/knotifications6/xplasma.notifyrc','.local/share/aurorae','.local/share/kwin','.local/share/color-schemes',
@@ -552,6 +552,14 @@ def user_pictures(home):
  copy(BASE/'payload/assets/user-pictures',home/'.local/share/plasma/avatars/windows-xp')
  log('XP user pictures added to System Settings → Users → Change avatar; current picture preserved.')
 
+def lock_screen_wallpaper(home):
+ # Plasma's own lock screen keeps the distribution's wallpaper, which can be so
+ # light (Fedora's) that its white text is barely readable. With XP's wallpaper
+ # it reads, and matches the desktop. (The XP lock screen has its own.)
+ bliss=home/'.local/share/xplasma/assets/wallpapers/Bliss.jpg'
+ if not bliss.is_file():return
+ config('kscreenlockerrc','Greeter','WallpaperPlugin','org.kde.image')
+ run([detect()['writer'],'--file','kscreenlockerrc','--group','Greeter','--group','Wallpaper','--group','org.kde.image','--group','General','--key','Image',bliss.as_uri()])
 def lock_screen(home,state,upgrade=False):
  src=Path('/usr/share/plasma/shells/org.kde.plasma.desktop');dest=home/'.local/share/plasma/shells/org.kde.plasma.desktop'
  # (Its own shell from the release being upgraded: links to the system's
@@ -749,6 +757,7 @@ def install(selected,theme,asset_options=None):
    run(['kwriteconfig6','--file','ksplashrc','--group','KSplash','--key','Engine','none'])
    phase('Installing selected login and boot screens');root('screens',selected,upgrade=bool(installed&{'login','boot'}))
   if 'welcome_splash' in selected:phase('Installing XP Welcome desktop splash');welcome_splash(home)
+  if 'wallpaper' in selected and 'lock' not in selected:lock_screen_wallpaper(home)
   if 'taskbar' in selected:phase('Checking the XP taskbar');verify_taskbar()
   if tweaks.active(asset_options['tweaks'],selected):phase('Applying customizations');apply_tweaks(asset_options['tweaks'],selected)
   snapshot.finish()
