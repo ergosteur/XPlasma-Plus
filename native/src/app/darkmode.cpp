@@ -59,6 +59,9 @@ std::optional<Look> applicationLook(const Look &source, bool dark, QString *erro
   QFile known(folder+QStringLiteral("/source.json"));
   if((!known.open(QIODevice::ReadOnly) || known.readAll()!=marker) && !write(known.fileName(),marker,error))return {};
   const auto loaded=Look::fromStyle(generated,source.variant,error);if(!loaded)return {};result=*loaded;
+  // Colours only: the metrics and fonts are the source look's (which may differ
+  // from what the style file names, e.g. Royale's fonts for Zune and Embedded).
+  result.system.metrics=source.system.metrics;result.system.icons.font=source.system.icons.font;
   LiveSession previewSession;maintenance::run(previewSession,{},folder,true);
  }
  result.id=source.id+QStringLiteral("-dark-applications");result.name=source.name+QStringLiteral(" (dark applications)");result.system.name=result.name;
