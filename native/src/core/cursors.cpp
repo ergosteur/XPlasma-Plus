@@ -21,9 +21,9 @@ quint32 u32(const QByteArray &b, qsizetype at)
 }
 
 // The image an entry points at, if it's there.
-QImage entryImage(const QByteArray &data)
+QImage entryImage(const QByteArray &data, bool *inverts = nullptr)
 {
-    return decodeMaskedImage(data, true);
+    return decodeMaskedImage(data, true, inverts);
 }
 
 } // namespace
@@ -44,13 +44,14 @@ std::optional<CursorFrame> decodeCursorFile(const QByteArray &file)
         if (offset >= quint32(file.size()) || size > quint32(file.size()) - offset)
             continue;
         const QByteArray data = file.mid(offset, size);
-        const QImage img = entryImage(data);
+        bool inverts = false;
+        const QImage img = entryImage(data, &inverts);
         if (img.isNull())
             continue;
         const int depth = data.startsWith("\x89PNG") ? 32 : u16(data, 14);
         if (best && (img.width() < best->image.width() || (img.width() == best->image.width() && depth <= bestDepth)))
             continue;
-        best = CursorFrame{img, cursor ? QPoint(u16(file, at + 4), u16(file, at + 6)) : QPoint(), 0};
+        best = CursorFrame{img, cursor ? QPoint(u16(file, at + 4), u16(file, at + 6)) : QPoint(), 0, inverts};
         bestDepth = depth;
     }
     return best;
@@ -126,10 +127,11 @@ std::optional<CursorFrame> cursorGroup(const PeResources &pe, QStringView group)
         const Resource *cur = pe.find(u"1", QString::number(u16(dir->data, 6 + i * 14 + 12)));
         if (!cur || cur->data.size() < 4)
             continue;
-        const QImage img = entryImage(cur->data.mid(4));
+        bool inverts = false;
+        const QImage img = entryImage(cur->data.mid(4), &inverts);
         if (img.isNull() || (best && img.width() <= best->image.width()))
             continue;
-        best = CursorFrame{img, QPoint(u16(cur->data, 0), u16(cur->data, 2)), 0};
+        best = CursorFrame{img, QPoint(u16(cur->data, 0), u16(cur->data, 2)), 0, inverts};
     }
     return best;
 }

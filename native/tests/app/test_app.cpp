@@ -3279,6 +3279,12 @@ private Q_SLOTS:
                 QVERIFY2(QFileInfo(dir + QLatin1String("/cursors/") + name).isFile(), qPrintable(name));
         QFile index(dir + QLatin1String("/index.theme"));
         QVERIFY(index.open(QIODevice::ReadOnly) && index.readAll().contains("Name=Dinosaur (XP)"));
+        // The "Breeze text and crosshair cursors" customization: those two come from the inherited theme.
+        const QString own = m_home.filePath(QStringLiteral("pointers-own"));
+        QVERIFY2(pointers::writeTheme(*dino, true, own, &size, &error, true), qPrintable(error));
+        for (const QString &name : {QStringLiteral("text"), QStringLiteral("xterm"), QStringLiteral("crosshair"), QStringLiteral("cross")})
+            QVERIFY2(!QFileInfo::exists(own + QLatin1String("/cursors/") + name), qPrintable(name));
+        QVERIFY(QFileInfo(own + QLatin1String("/cursors/default")).isFile());
 
         // Applied: a theme per scheme, at its size, the user's own kept for reset.
         RecordingSession session;

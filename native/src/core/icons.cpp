@@ -23,7 +23,7 @@ QImage decodeIconImage(const QByteArray &data)
     return decodeMaskedImage(data, false);
 }
 
-QImage decodeMaskedImage(const QByteArray &data, bool cursor)
+QImage decodeMaskedImage(const QByteArray &data, bool cursor, bool *inverts)
 {
     if (data.startsWith("\x89PNG"))
         return QImage::fromData(data, "PNG").convertToFormat(QImage::Format_ARGB32);
@@ -80,8 +80,13 @@ QImage decodeMaskedImage(const QByteArray &data, bool cursor)
                 const bool masked = (row[x / 8] >> (7 - x % 8)) & 1;
                 if (!masked)
                     out[x] |= 0xff000000u;
-                else
-                    out[x] = cursor && (out[x] & 0xffffffu) ? 0xff000000u : 0u;
+                else if (cursor && (out[x] & 0xffffffu)) {
+                    out[x] = 0xff000000u;
+                    if (inverts)
+                        *inverts = true;
+                } else {
+                    out[x] = 0u;
+                }
             }
         }
     return img;

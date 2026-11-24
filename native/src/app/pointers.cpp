@@ -17,6 +17,7 @@
 #include <QSaveFile>
 #include <QtEndian>
 
+#include <algorithm>
 #include <map>
 
 namespace xpl::pointers {
@@ -301,9 +302,10 @@ bool writeTheme(const Scheme &scheme, bool shadow, const QString &dir, int *size
     QDir(dir).removeRecursively();
     int nominal = 32;
     for (int role = 0; role < RoleCount; ++role) {
-        if (systemTextCursor && role == IBeam)
-            continue;   // (from the inherited theme: see the header)
         QList<CursorFrame> f = frames(scheme, role, error);
+        if (systemTextCursor && role != Arrow
+            && (role == IBeam || std::any_of(f.cbegin(), f.cend(), [](const CursorFrame &c) { return c.inverts; })))
+            continue;   // (from the inherited theme: see the header)
         if (f.isEmpty()) {
             if (error && error->isEmpty())
                 *error = QStringLiteral("no cursor for %1").arg(roleName(role));

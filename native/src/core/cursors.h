@@ -24,6 +24,7 @@ struct CursorFrame
     QImage image;       // ARGB32
     QPoint hotspot;
     int delayMs = 0;    // how long it shows, in an animation
+    bool inverts = false;   // has pixels that invert the screen (drawn black)
 };
 
 // A .cur (or .ico) file: its largest, deepest image.

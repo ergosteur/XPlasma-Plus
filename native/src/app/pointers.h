@@ -58,9 +58,13 @@ QList<CursorFrame> withShadow(const QList<CursorFrame> &frames);
 
 // The theme, into `dir` (its index.theme and cursors/); `size` is what it
 // should be shown at (the Normal Select cursor's). With `systemTextCursor`
-// (the installer's "Breeze text cursor" customization) XP's I-beam is left
-// out, so the text cursor comes from the inherited theme (Breeze's when it's
-// installed): XP's thin black I-beam all but disappears on dark text areas.
+// (the installer's "Breeze text, crosshair and other inverting cursors"
+// customization) every pointer but the arrow that XP drew by inverting the
+// screen -- which Xcursor can't, so it comes out plain black -- is left out,
+// and comes from the inherited theme (Breeze's when it's installed). In XP's
+// own schemes that's the I-beam and the crosshair, thin black lines that all
+// but disappear on dark areas (terminals, a screenshot's region selection);
+// in the Inverted schemes, most pointers. The I-beam always goes.
 bool writeTheme(const Scheme &scheme, bool shadow, const QString &dir, int *size, QString *error = nullptr,
                 bool systemTextCursor = false);
 

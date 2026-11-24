@@ -32,9 +32,10 @@ TWEAKS = [
              '(The IE6 Firefox browser keeps its IE icon either way.)',
      'requires': ['icons']},
     {'id': 'breeze_text_cursor',
-     'label': 'Breeze text cursor (I-beam)',
-     'help': "XP's thin black text cursor is hard to see on dark text areas such as terminals. "
-             "Use Breeze's outlined one; the other XP pointers stay.",
+     'label': 'Breeze text, crosshair and other thin black pointers',
+     'help': "XP drew its I-beam and crosshair by inverting the screen, which Linux can't: they come out "
+             "as thin black lines, hard to see on dark areas such as terminals or a screenshot's region "
+             "selection. Use Breeze's outlined ones for every such pointer; the other XP pointers stay.",
      'requires': ['pointers']},
     {'id': 'plasma_notifications',
      'label': "Plasma's notification popups instead of XP balloons",
