@@ -242,7 +242,7 @@ bool apply(Session &session, State &state, QString *error)
     }
     // (Unless the installer's "keep your own fixed-width font" customization is on.)
     if (!state.settings.value(QStringLiteral("installerTweaks")).toObject().value(QStringLiteral("own_fixed_font")).toBool())
-        session.writeConfig(QStringLiteral("kdeglobals"), general, QStringLiteral("fixedFont"), QStringLiteral("Lucida Console,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"));
+        session.writeConfig(QStringLiteral("kdeglobals"), general, QStringLiteral("fixedFont"), QStringLiteral("Lucida Console,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"));
     // Retire only unchanged global rendering overrides from earlier versions.
     // Respect any font-setting edits the user has made since installation.
     if (state.settings.value(QStringLiteral("xpTextRulesVersion")).toInt() < kRulesVersion) {

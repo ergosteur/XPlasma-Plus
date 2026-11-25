@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """Transactional, feature-selectable portable KDE XP installer backend."""
-import argparse,configparser,fnmatch,hashlib,json,os,platform,re,shutil,subprocess,sys,tarfile,tempfile,traceback
+import argparse,configparser,fnmatch,hashlib,json,os,platform,re,shutil,subprocess,sys,tarfile,tempfile,time,traceback
 from pathlib import Path
 BASE=Path(__file__).resolve().parent
 sys.path.insert(0,str(BASE/'lib'))
@@ -394,11 +394,11 @@ def basic(home,selected,native=False,asset_options=None):
   font_rules.write_text('<?xml version="1.0"?><fontconfig><!-- XP interface fonts are selected explicitly; keep system generic defaults. --></fontconfig>\n')
   import tweaks as customizations
   own_fixed='own_fixed_font' in customizations.active((asset_options or {}).get('tweaks',[]),selected)
-  fonts={'font':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0','menuFont':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0','smallestReadableFont':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0','toolBarFont':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0','fixedFont':'Lucida Console,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0'}
+  fonts={'font':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1','menuFont':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1','smallestReadableFont':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1','toolBarFont':'Tahoma OS,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1','fixedFont':'Lucida Console,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1'}
   if own_fixed:del fonts['fixedFont']
   for key,value in fonts.items():config('kdeglobals','General',key,value)
   if not native:
-   for key in ['activeFont','inactiveFont']:config('kdeglobals','WM',key,'Trebuchet MS,10,-1,5,700,0,0,0,0,0,0,0,0,0,0,1,,0,0')
+   for key in ['activeFont','inactiveFont']:config('kdeglobals','WM',key,'Trebuchet MS,10,-1,5,700,0,0,0,0,0,0,0,0,0,0,1')
   if shutil.which('gsettings'):
    for key,value in [('font-name','Tahoma OS 8')]+([] if own_fixed else [('monospace-font-name','Lucida Console 10')]):run(['gsettings','set','org.gnome.desktop.interface',key,value],check=False)
   run(['fc-cache','-f'])
@@ -492,9 +492,46 @@ def taskbar_defaults(home,selected):
  quick.currentConfigGroup=["General"];quick.writeConfig("launcherUrls",URLS);
  quick.writeConfig("maxSectionCount",1);quick.writeConfig("showLauncherNames",false);quick.writeConfig("enablePopup",false);quick.reloadConfig();
  var start=p.widgets().filter(function(w){return w.type==="fyi.hotsocket.xplasma.start";})[0];
- if(start)quick.index=start.index+1;
+ if(!start)return;
+ quick.index=start.index+1;
+ // Plasma before 6.6 has no working widget index (index -1, setIndex a no-op): the
+ // panel's own AppletOrder, which it reads when the shell starts, places it instead.
+ // The installer writes it with the shell stopped (a running panel saves its own
+ // order again after a widget is added, over one written from here).
+ if(quick.index<0){
+  p.currentConfigGroup=["General"];
+  var order=String(p.readConfig("AppletOrder","")).split(";").filter(function(x){return x;}).map(Number).filter(function(x){return x!==quick.id;});
+  var at=order.indexOf(start.id);order.splice(at<0?order.length:at+1,0,quick.id);
+  print("xplasma-applet-order "+p.id+" "+order.join(";")+"\\n");
+ }
 });'''.replace('URLS',json.dumps(urls))
- run([kdbus(),'org.kde.plasmashell','/PlasmaShell','org.kde.PlasmaShell.evaluateScript',script])
+ log('$ '+kdbus()+' org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript (default taskbar shortcuts)')
+ output=run([kdbus(),'org.kde.plasmashell','/PlasmaShell','org.kde.PlasmaShell.evaluateScript',script],capture=True)
+ orders=[line.split()[1:3] for line in output.splitlines() if line.startswith('xplasma-applet-order ') and len(line.split())==3]
+ if orders:
+  if not detect()['systemd']:
+   log('Quick Launch moves beside Start once Plasma has restarted (this Plasma version places it only then).');return
+  log('Placing Quick Launch beside Start: restarting Plasma with the panel order set.')
+  writer=shutil.which('kwriteconfig6')
+  def write_orders():
+   for containment,order in orders:
+    run([writer,'--file','plasma-org.kde.plasma.desktop-appletsrc','--group','Containments','--group',containment,'--group','General','--key','AppletOrder',order])
+  restart_plasmashell(while_stopped=write_orders)
+def restart_plasmashell(wait=60,while_stopped=None):
+ """Restart Plasma's shell and wait until it takes scripts again (later steps send it some).
+ while_stopped runs between stopping and starting it, for files the shell would rewrite."""
+ if while_stopped:
+  run(['systemctl','--user','stop','plasma-plasmashell.service'],check=False)
+  while_stopped()
+  run(['systemctl','--user','start','plasma-plasmashell.service'],check=False)
+ else:run(['systemctl','--user','restart','plasma-plasmashell.service'],check=False)
+ deadline=time.monotonic()+wait
+ while time.monotonic()<deadline:
+  try:
+   if run([kdbus(),'org.kde.plasmashell','/PlasmaShell','org.kde.PlasmaShell.evaluateScript','print(panels().length)'],capture=True).strip() not in ('','0'):return True
+  except subprocess.CalledProcessError:pass
+  time.sleep(1)
+ return False
 
 def desktop_updates(home,state,selected,asset_options=None):
  import importlib.util
