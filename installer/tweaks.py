@@ -7,7 +7,11 @@ settings['installerTweaks'] in ~/.local/share/xplasma/state.json for tweaks the
 native side implements.
 """
 import json
+import os
 import shutil
+import subprocess
+import time
+from pathlib import Path
 
 TWEAKS = [
     {'id': 'bell_always_shown',
@@ -125,6 +129,56 @@ def show_desktop_entry(qdbus):
             'Categories=Utility;\nNoDisplay=true\nX-XPlasma-Customization=show_desktop_button\n')
 
 
+def dolphin_settings_version(home):
+    """[General] Version in the user's dolphinrc, 0 when Dolphin has never saved one."""
+    group = None
+    try:
+        lines = (Path(home) / '.config/dolphinrc').read_text(errors='replace').splitlines()
+    except OSError:
+        return 0
+    for line in lines:
+        line = line.strip()
+        if line.startswith('['):
+            group = line
+        elif group == '[General]' and line.startswith('Version='):
+            try:
+                return int(line.split('=', 1)[1])
+            except ValueError:
+                return 0
+    return 0
+
+
+def dolphin_first_run(qdbus, log, timeout=20):
+    """Start Dolphin offscreen and close it, so its one-time first run is done.
+    True when it closed by itself (its settings saved). Skipped while a Dolphin runs."""
+    dolphin = shutil.which('dolphin')
+    if not dolphin or not shutil.which(qdbus) or subprocess.run(['pgrep', '-x', 'dolphin'], capture_output=True).returncode == 0:
+        return False
+    env = {**os.environ, 'QT_QPA_PLATFORM': 'offscreen'}
+    proc = subprocess.Popen([dolphin, '--new-window'], env=env, stdin=subprocess.DEVNULL,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    service, window = f'org.kde.dolphin-{proc.pid}', '/dolphin/Dolphin_1'
+    closed = False
+    try:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline and proc.poll() is None:
+            if subprocess.run([qdbus, service, window, 'org.qtproject.Qt.QWidget.close'],
+                              capture_output=True, timeout=5).returncode == 0:
+                proc.wait(timeout=10)
+                closed = True
+                break
+            time.sleep(0.5)
+    except (subprocess.TimeoutExpired, OSError):
+        pass
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait()
+    if not closed:
+        log('Dolphin could not be started once in the background; its first start will hide the menu bar (View it again with Ctrl+M).')
+    return closed
+
+
 DOLPHIN_TOOLBAR = ['go_back', 'go_forward', 'go_up', None, 'toggle_search', 'view_settings', 'url_navigators',
                    'split_view', 'show_terminal_panel', 'create_dir', 'split_stash', 'hamburger_menu']
 
@@ -166,6 +220,11 @@ def apply(chosen, selected, run, shell_script, log, home=None, qdbus='qdbus6'):
         ui = home / '.local/share/kxmlgui5/dolphin/dolphinui.rc'
         ui.parent.mkdir(parents=True, exist_ok=True)
         ui.write_text(dolphin_ui())
+        # A Dolphin that has never run (no [General] Version below 200) hides its menu
+        # bar on its first start and saves that over ours. Its first run is done here
+        # instead, unseen, so its other first-run choices (side panels closed) stay.
+        if dolphin_settings_version(home) < 200:
+            dolphin_first_run(qdbus, log)
         writer = shutil.which('kwriteconfig6') or shutil.which('kwriteconfig5')
         if writer:
             run([writer, '--file', 'dolphinrc', '--group', 'MainWindow', '--key', 'MenuBar', 'Enabled'])

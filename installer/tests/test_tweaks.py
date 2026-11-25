@@ -99,8 +99,11 @@ class Tweaks(unittest.TestCase):
         import tempfile
         from unittest.mock import patch
         from xml.etree import ElementTree
-        run = Mock()
-        with tempfile.TemporaryDirectory() as d, patch.object(tweaks.shutil, 'which', return_value='/usr/bin/kwriteconfig6'):
+        run, order = Mock(), []
+        first_run = Mock(side_effect=lambda *a: order.append('first run'))
+        run.side_effect = lambda argv, **kw: order.append(argv[-1])
+        with tempfile.TemporaryDirectory() as d, patch.object(tweaks.shutil, 'which', return_value='/usr/bin/kwriteconfig6'), \
+                patch.object(tweaks, 'dolphin_first_run', first_run):
             home = Path(d)
             tweaks.apply(['dolphin_toolbar'], set(), run, Mock(), Mock(), home=home)
             root = ElementTree.parse(home / '.local/share/kxmlgui5/dolphin/dolphinui.rc').getroot()
@@ -110,6 +113,29 @@ class Tweaks(unittest.TestCase):
             self.assertEqual(actions[:3], ['go_back', 'go_forward', 'go_up'])
             self.assertIn('url_navigators', actions)
             self.assertEqual(run.call_args.args[0][-3:], ['--key', 'MenuBar', 'Enabled'])
+            # Dolphin had never run: its first run (which hides the menu bar) is done first.
+            self.assertEqual(order, ['first run', 'Enabled'])
+
+    def test_dolphin_that_has_run_is_not_started(self):
+        import tempfile
+        from unittest.mock import patch
+        first_run = Mock()
+        with tempfile.TemporaryDirectory() as d, patch.object(tweaks.shutil, 'which', return_value='/usr/bin/kwriteconfig6'), \
+                patch.object(tweaks, 'dolphin_first_run', first_run):
+            home = Path(d)
+            (home / '.config').mkdir()
+            (home / '.config/dolphinrc').write_text('[MainWindow]\nVersion=1\n\n[General]\nVersion=202\n')
+            self.assertEqual(tweaks.dolphin_settings_version(home), 202)
+            tweaks.apply(['dolphin_toolbar'], set(), Mock(), Mock(), Mock(), home=home)
+            first_run.assert_not_called()
+
+    def test_dolphin_first_run_is_skipped_while_dolphin_runs(self):
+        from unittest.mock import patch
+        with patch.object(tweaks.shutil, 'which', return_value='/usr/bin/x'), \
+                patch.object(tweaks.subprocess, 'run', return_value=Mock(returncode=0)), \
+                patch.object(tweaks.subprocess, 'Popen') as popen:
+            self.assertFalse(tweaks.dolphin_first_run('qdbus6', Mock()))
+            popen.assert_not_called()
 
 if __name__ == '__main__':
     unittest.main()
