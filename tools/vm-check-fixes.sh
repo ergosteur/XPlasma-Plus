@@ -9,6 +9,12 @@ check() { # name, command (true = OK)
 }
 tweak() { python3 -c "import json,sys;print(json.load(open('$HOME/.local/share/xplasma/state.json'))['settings'].get('installerTweaks',{}).get(sys.argv[1],False))" "$1"; }
 link_or_file() { [ -L "$1" ] || [ -e "$1" ]; }
+feature() { python3 -c "import json,sys;sys.exit(sys.argv[1] not in json.load(open('$HOME/.local/share/kde-xp-suite/installation.json'))['features'])" "$1"; }
+# Read settings as the desktop session does: distributions add config directories
+# (Kubuntu's font defaults live in /usr/share/kubuntu-default-settings), and an SSH
+# shell doesn't have them. A value equal to such a default isn't stored in ~/.config.
+pid=$(pgrep -u "$USER" -x plasmashell | head -1)
+[ -n "$pid" ] && export XDG_CONFIG_DIRS="$(tr '\0' '\n' < /proc/$pid/environ | sed -n 's/^XDG_CONFIG_DIRS=//p')"
 
 echo "look: $(python3 -c "import json;s=json.load(open('$HOME/.local/share/xplasma/state.json'))['settings'];print(s.get('appliedPackageId'))")"
 echo "theme: $(kreadconfig6 --file xplasmarc --group Theme --key Source)  variant: $(kreadconfig6 --file xplasmarc --group Theme --key Variant)"
@@ -43,8 +49,8 @@ echo "font smoothing: $sm"
 [ "$(tweak breeze_text_cursor)" = True ] && check "Breeze I-beam + crosshair (XP ones left out)" "t=\$(kreadconfig6 --file kcminputrc --group Mouse --key cursorTheme); [ ! -e $I/\$t/cursors/text ] && [ ! -e $I/\$t/cursors/crosshair ] && grep -q 'Inherits=breeze_cursors' $I/\$t/index.theme"
 [ "$(tweak plasma_notifications)" = True ] && check "Plasma notification popups (balloons=false)" "[ \"\$(kreadconfig6 --file xplasma-customizationsrc --group Notifications --key balloons)\" = false ]"
 [ "$(tweak own_fixed_font)" = True ] && check "fixed font not forced to Lucida Console" "! kreadconfig6 --file kdeglobals --group General --key fixedFont | grep -q '^Lucida Console'"
-[ "$(tweak dolphin_toolbar)" = True ] && check "Dolphin toolbar (ours, merged) + menu bar shown" "python3 -c \"import sys,xml.etree.ElementTree as E;t=[a.get('name') for b in E.parse(sys.argv[1]).getroot().iter('ToolBar') if b.get('name')=='mainToolBar' for a in b.iter('Action')];sys.exit(t[:3]!=['go_back','go_forward','go_up'] or 'url_navigators' not in t)\" ~/.local/share/kxmlgui5/dolphin/dolphinui.rc && [ \"\$(kreadconfig6 --file dolphinrc --group MainWindow --key MenuBar)\" != Disabled ]"
-check "Plasma lock screen shows XP's Welcome screen" "[ \"\$(kreadconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image)\" = file://$HOME/.local/share/xplasma/assets/wallpapers/xp-welcome-lock.png ] && [ ! -e ~/.local/share/plasma/shells/org.kde.plasma.desktop ]"
+[ "$(tweak dolphin_toolbar)" = True ] && check "Dolphin toolbar (ours, merged) + menu bar shown, not a first run" "python3 -c \"import sys,xml.etree.ElementTree as E;t=[a.get('name') for b in E.parse(sys.argv[1]).getroot().iter('ToolBar') if b.get('name')=='mainToolBar' for a in b.iter('Action')];sys.exit(t[:3]!=['go_back','go_forward','go_up'] or 'url_navigators' not in t)\" ~/.local/share/kxmlgui5/dolphin/dolphinui.rc && [ \"\$(kreadconfig6 --file dolphinrc --group MainWindow --key MenuBar)\" != Disabled ] && [ \"\$(kreadconfig6 --file dolphinrc --group General --key Version)\" -ge 200 ]"
+feature lock && echo "n/a   Plasma lock screen background (XP lock screen installed instead)" || check "Plasma lock screen shows XP's Welcome screen" "[ \"\$(kreadconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image)\" = file://$HOME/.local/share/xplasma/assets/wallpapers/xp-welcome-lock.png ] && [ ! -e ~/.local/share/plasma/shells/org.kde.plasma.desktop ]"
 check "taskbar theme's Complementary reads dark behind light text" "f=~/.local/share/plasma/desktoptheme/\$(kreadconfig6 --file plasmarc --group Theme --key name)/colors; python3 -c \"import sys,re;s=open(sys.argv[1]).read();b=s[s.index('[Colors:Complementary]'):];bg=[int(x) for x in re.search(r'BackgroundNormal=([0-9,]+)',b).group(1).split(',')];fg=[int(x) for x in re.search(r'ForegroundNormal=([0-9,]+)',b).group(1).split(',')];sys.exit(not (max(bg)<=127 or (max(fg)+min(fg))/2<128))\" \$f"
 check "desktop icon cell 82px rule" "grep -q 'XPlasma: XP kept \"My Documents\" on one line' ~/.local/share/plasma/plasmoids/org.kde.desktopcontainment/contents/ui/FolderView.qml"
 check "caption animation plugin loads (no version error this boot)" "! journalctl --user -b -q | grep -q 'xp-caption-animation.*built for a different version'"
