@@ -52,6 +52,34 @@ echo "font smoothing: $sm"
 [ "$(tweak dolphin_toolbar)" = True ] && check "Dolphin toolbar (ours, merged) + menu bar shown, not a first run" "python3 -c \"import sys,xml.etree.ElementTree as E;t=[a.get('name') for b in E.parse(sys.argv[1]).getroot().iter('ToolBar') if b.get('name')=='mainToolBar' for a in b.iter('Action')];sys.exit(t[:3]!=['go_back','go_forward','go_up'] or 'url_navigators' not in t)\" ~/.local/share/kxmlgui5/dolphin/dolphinui.rc && [ \"\$(kreadconfig6 --file dolphinrc --group MainWindow --key MenuBar)\" != Disabled ] && [ \"\$(kreadconfig6 --file dolphinrc --group General --key Version)\" -ge 200 ]"
 feature lock && echo "n/a   Plasma lock screen background (XP lock screen installed instead)" || check "Plasma lock screen shows XP's Welcome screen" "[ \"\$(kreadconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image)\" = file://$HOME/.local/share/xplasma/assets/wallpapers/xp-welcome-lock.png ] && [ ! -e ~/.local/share/plasma/shells/org.kde.plasma.desktop ]"
 check "taskbar theme's Complementary reads dark behind light text" "f=~/.local/share/plasma/desktoptheme/\$(kreadconfig6 --file plasmarc --group Theme --key name)/colors; python3 -c \"import sys,re;s=open(sys.argv[1]).read();b=s[s.index('[Colors:Complementary]'):];bg=[int(x) for x in re.search(r'BackgroundNormal=([0-9,]+)',b).group(1).split(',')];fg=[int(x) for x in re.search(r'ForegroundNormal=([0-9,]+)',b).group(1).split(',')];sys.exit(not (max(bg)<=127 or (max(fg)+min(fg))/2<128))\" \$f"
-check "desktop icon cell 82px rule" "grep -q 'XPlasma: XP kept \"My Documents\" on one line' ~/.local/share/plasma/plasmoids/org.kde.desktopcontainment/contents/ui/FolderView.qml"
+quick_launch_after_start() { # in every panel with both: the first widget after Start (spacers aside) is Quick Launch
+  python3 - ~/.config/plasma-org.kde.plasma.desktop-appletsrc <<'PY'
+import configparser,re,sys
+c=configparser.RawConfigParser(strict=False,interpolation=None);c.optionxform=str;c.read(sys.argv[1])
+seen=False
+for s in c.sections():
+    if not re.fullmatch(r'Containments\]\[\d+',s) or c.get(s,'plugin',fallback='')!='org.kde.panel':continue
+    ids={c.get(a,'plugin',fallback=''):a.rsplit('[',1)[1] for a in c.sections() if re.fullmatch(re.escape(s)+r'\]\[Applets\]\[\d+',a)}
+    if 'fyi.hotsocket.xplasma.start' not in ids or 'org.kde.plasma.quicklaunch' not in ids:continue
+    order=c.get(s+'][General','AppletOrder',fallback='').split(';');seen=True
+    plugin={v:k for k,v in ids.items()}
+    gaps={'org.kde.plasma.panelspacer','org.kde.plasma.marginsseparator'}
+    after=order[order.index(ids['fyi.hotsocket.xplasma.start'])+1:] if ids['fyi.hotsocket.xplasma.start'] in order else []
+    after=[a for a in after if plugin.get(a) not in gaps]
+    if after[:1]!=[ids['org.kde.plasma.quicklaunch']]:sys.exit(1)
+sys.exit(not seen)
+PY
+}
+fonts_in_16_fields() { # Qt before 6.11 (KDE Frameworks on Plasma 6.3) rejects the 19-field form: Noto Sans 10 everywhere
+  local k v
+  for k in font menuFont smallestReadableFont toolBarFont; do
+    v=$(kreadconfig6 --file kdeglobals --group General --key $k)
+    case $v in 'Tahoma OS,'*) [ "$(printf %s "$v" | tr -cd , | wc -c)" -eq 15 ] || return 1;; esac
+  done
+}
+[ "$(python3 -c "import json;print('taskbar' in json.load(open('$HOME/.local/share/kde-xp-suite/installation.json'))['features'])")" = True ] \
+  && check "Quick Launch beside Start (panel order)" quick_launch_after_start
+check "XP fonts in the form every Qt 6 reads (16 fields)" fonts_in_16_fields
+check "desktop icon cell 82px rule""grep -q 'XPlasma: XP kept \"My Documents\" on one line' ~/.local/share/plasma/plasmoids/org.kde.desktopcontainment/contents/ui/FolderView.qml"
 check "caption animation plugin loads (no version error this boot)" "! journalctl --user -b -q | grep -q 'xp-caption-animation.*built for a different version'"
 echo "== $ok OK, $bad FAIL"
