@@ -46,7 +46,10 @@ def detect():
  elif family=='pacman':plasma=output(['pacman','-Q','plasma-workspace'])
  if not numbers(plasma)[0]:plasma=output(['plasmashell','--version'])
  arch={'x86_64':'amd64','amd64':'amd64','aarch64':'arm64','arm64':'arm64'}.get(platform.machine(),platform.machine())
- boot=next((x for x in ['update-initramfs','dracut'] if shutil.which(x)),None)
+ # (Debian keeps update-initramfs in /usr/sbin, which isn't on a user's PATH there;
+ # the root helper runs it through pkexec, whose PATH has it.)
+ sbin=os.pathsep.join([os.environ.get('PATH',''),'/usr/local/sbin','/usr/sbin','/sbin'])
+ boot=next((x for x in ['update-initramfs','dracut'] if shutil.which(x,path=sbin)),None)
  return {'name':release.get('PRETTY_NAME','Linux'),'family':family,'arch':arch,'plasma':numbers(plasma),'qt':numbers(qt),
   'writer':executable('kwriteconfig6'),'dbus':executable('qdbus6','qdbus-qt6','/usr/lib/qt6/bin/qdbus'),
   'kde':'KDE' in os.environ.get('XDG_CURRENT_DESKTOP','').upper(),'boot':boot,

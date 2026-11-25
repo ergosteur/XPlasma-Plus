@@ -247,7 +247,11 @@ def preflight(selected,installed=()):
  if not profile['kde']:raise RuntimeError('Run it inside a KDE Plasma desktop session.')
  required=5 if selected&NATIVE else 2
  if shutil.disk_usage(Path.home()).free<required*1024**3:raise RuntimeError('At least '+str(required)+' GB of free space is required for the selected features.')
- if selected&(NATIVE|ACCESSORIES|{'login','boot','firefox','explorer','control_panel','tray','caption_animation','icons'}) and detect()['family'] and not shutil.which('pkexec'):raise RuntimeError('The desktop authentication tool pkexec is missing.')
+ if selected&(NATIVE|ACCESSORIES|{'login','boot','firefox','explorer','control_panel','tray','caption_animation','icons'}) and detect()['family'] and not shutil.which('pkexec'):
+  # (Debian 13 packages pkexec on its own, and its KDE install leaves it out. Setup
+  # can't install it: every root step, its dependencies included, goes through it.)
+  family=detect()['family'];install={'apt':'sudo apt install pkexec','dnf':'sudo dnf install polkit','pacman':'sudo pacman -S polkit','zypper':'sudo zypper install polkit','xbps':'sudo xbps-install polkit'}.get(family)
+  raise RuntimeError('The desktop authentication tool pkexec is missing.'+(' Install it first, in a terminal: '+install if install else ''))
  # Directly managed roots must be normal files/directories so the before/after
  # inventory can safely restore them; individual theme-resource links are fine.
  home=Path.home()
