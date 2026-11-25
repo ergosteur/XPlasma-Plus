@@ -1,3 +1,6 @@
+> [!NOTE]
+> **This is ergosteur's unofficial fork of [andymenard/XPlasma-Plus](https://github.com/andymenard/XPlasma-Plus).** It adds Plasma 6.8 support, optional customizations and fixes on top of 1.0.3; see the [1.0.4 Beta 1 release notes](public-alpha/RELEASE-NOTES-1.0.4-beta.1.md). Download the fork's installer from [this fork's Releases](https://github.com/ergosteur/XPlasma-Plus/releases) and report problems with it on [this fork's issues](https://github.com/ergosteur/XPlasma-Plus/issues). The rest of this README is upstream's: its download links and wiki are for upstream's 1.0.3.
+
 > [!WARNING]
 > **This project is vibecoded.** Hands-on testing has been limited to **Asahi Linux (ARM64)** and **Kubuntu on Intel/AMD x86-64**. Issues are expected; builds for other platforms do not mean they have been tested on real hardware. **I do not recommend installing this on a computer without backing up your data and system configuration first. While I personally run this on my main computers and have tried my best to audit the code, I am not a software engineer.**
 
