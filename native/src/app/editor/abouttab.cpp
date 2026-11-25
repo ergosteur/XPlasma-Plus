@@ -113,7 +113,7 @@ AboutTab::AboutTab(QWidget *parent)
         auto *updates = new QPushButton(QStringLiteral("&Download New Releases"));
         legal->addWidget(updates);
         connect(updates, &QPushButton::clicked, this, [] {
-            QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/andymenard/XPlasma-Plus/releases")));
+            QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/ergosteur/XPlasma-Plus/releases")));
         });
     }
     layout->addLayout(legal);

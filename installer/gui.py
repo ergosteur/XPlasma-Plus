@@ -279,7 +279,7 @@ class Installer(QtWidgets.QMainWindow):
   except OSError:pass
   dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('XPlasma Plus operation failed');dialog.resize(780,540)
   layout=QtWidgets.QVBoxLayout(dialog)
-  instructions=QtWidgets.QLabel('Setup did not complete. Review the report below, click Copy report, then paste it into a new or existing issue at <a href="https://github.com/andymenard/XPlasma-Plus/issues">github.com/andymenard/XPlasma-Plus/issues</a>.'+saved)
+  instructions=QtWidgets.QLabel('Setup did not complete. Review the report below, click Copy report, then paste it into a new or existing issue at <a href="https://github.com/ergosteur/XPlasma-Plus/issues">github.com/andymenard/XPlasma-Plus/issues</a>.'+saved)
   instructions.setWordWrap(True);instructions.setOpenExternalLinks(True);layout.addWidget(instructions)
   text=QtWidgets.QPlainTextEdit();text.setObjectName('failureReport');text.setReadOnly(True);text.setPlainText(report);layout.addWidget(text)
   buttons=QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Close)

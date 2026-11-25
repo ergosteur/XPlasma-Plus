@@ -1,7 +1,7 @@
 {
-  "label": "1.0.3 Public Beta",
-  "version": "1.0.3",
-  "repository": "andymenard/XPlasma-Plus",
+  "label": "1.0.4 Beta 1 (ergosteur fork)",
+  "version": "1.0.4-beta.1",
+  "repository": "ergosteur/XPlasma-Plus",
   "channel": "beta",
   "projects": [
     "desktop",
