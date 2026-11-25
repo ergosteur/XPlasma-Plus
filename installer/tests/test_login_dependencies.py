@@ -9,4 +9,13 @@ class LoginDependencies(unittest.TestCase):
    self.assertIn('python3-pyside6.qtdbus',packages)
  def test_login_dependency_not_required_for_desktop_only(self):
   self.assertNotIn('python3-pyside6.qtdbus',deps.packages('apt',{'desktop'},native_ready=True))
+ def test_dnf_keeps_an_installed_greeter_display_server(self):
+  # Fedora Budgie's sddm-wayland-miriway conflicts with sddm-wayland-plasma.
+  from unittest.mock import patch
+  for installed,expected in ((True,False),(False,True)):
+   calls=[]
+   with patch.object(deps,'greeter_displayserver_installed',return_value=installed):
+    deps.install('dnf',{'login'},calls.append,native_ready=True)
+   self.assertEqual('sddm-wayland-plasma' in calls[0],expected)
+   self.assertIn('sddm',calls[0])
 if __name__=='__main__':unittest.main()

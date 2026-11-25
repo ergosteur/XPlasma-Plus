@@ -118,6 +118,10 @@ def apt_builddeps(run):
   options=['-o','Dir::Etc::sourcelist=/dev/null','-o','Dir::Etc::sourceparts='+str(parts)]
   run(['apt-get',*options,'update'])
   run(['apt-get',*options,'build-dep','--assume-yes','plasma-workspace','plasma-desktop'])
+def greeter_displayserver_installed():
+ """An installed RPM provides SDDM's sddm-greeter-displayserver."""
+ try:return subprocess.run(['rpm','-q','--whatprovides','sddm-greeter-displayserver'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
+ except OSError:return False
 def install(family,features,run,bootstrap=False,native_ready=False,caption_ready=False):
  chosen=packages(family,features,bootstrap,native_ready,caption_ready)
  if family=='apt':
@@ -133,7 +137,11 @@ def install(family,features,run,bootstrap=False,native_ready=False,caption_ready
   missing=[p for p in chosen if not candidate(p)]
   if missing:raise RuntimeError('No APT installation candidate for: '+', '.join(missing)+'. Check the enabled distribution repositories and the APT output above; no repositories were added.')
   run(['apt-get','install','--assume-yes',*chosen])
- elif family=='dnf':run(['dnf','install','-y',*chosen])
+ elif family=='dnf':
+  # SDDM's greeter needs one display server, and its packages conflict with each
+  # other: keep the one installed (Fedora Budgie's sddm-wayland-miriway, say).
+  if 'sddm-wayland-plasma' in chosen and greeter_displayserver_installed():chosen.remove('sddm-wayland-plasma')
+  run(['dnf','install','-y',*chosen])
  elif family=='pacman':run(['pacman','-S','--needed','--noconfirm',*chosen])
  elif family=='xbps':run(['xbps-install','-Sy',*chosen])
  else:run(['zypper','--non-interactive','install',*chosen])
