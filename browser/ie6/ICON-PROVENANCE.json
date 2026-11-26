@@ -62,9 +62,8 @@
       "security-warning.png": "Security Alert",
       "security-error.png": "Security Error",
       "privacy.png": "Privacy",
-      "location.png": "My Network Places",
       "serial.png": "Serial Connection",
-      "midi.png": "Generic Audio",
+      "midi.png": "Audio Devices",
       "image-file.png": "Bitmap",
       "audio-file.png": "Generic Audio",
       "video-file.png": "Generic Video",
@@ -105,7 +104,8 @@
   "project_drawn": {
     "license": "GPL-3.0-or-later",
     "files": {
-      "notification.png": "tools/icon-fixes/svg/bell.svg, the tray bell drawn for this project, rendered at 96 px"
+      "notification.png": "tools/icon-fixes/svg/bell.svg, the tray bell drawn for this project, rendered at 96 px",
+      "location.png": "the map pin drawn by tools/icon-fixes/xp_marks.py (browser/ie6/build-drawn-icons.py)"
     }
   }
 }
