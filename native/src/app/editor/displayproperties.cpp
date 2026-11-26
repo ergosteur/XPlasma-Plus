@@ -1585,10 +1585,12 @@ bool DisplayProperties::apply()
     }
     if (ok && crispChanged) {
         LiveSession session;
-        // (The retired "Crisp XP text" pixel fonts go with any explicit choice.)
-        if (State::load().settings.value(QStringLiteral("crispText")).toBool())
-            ok = crisptext::apply(session, false, &error);
         State state = State::load();
+        // (The retired "Crisp XP text" pixel fonts go with any explicit choice.)
+        if (state.settings.value(QStringLiteral("crispText")).toBool()) {
+            ok = crisptext::apply(session, false, &error);
+            if (ok) state.settings.insert(QStringLiteral("crispText"), false);
+        }
         const QString choice = smoothingChoice();
         const auto mode = choice == QLatin1String("none") ? xptext::Smoothing::None
                         : choice == QLatin1String("cleartype") ? xptext::Smoothing::ClearType : xptext::Smoothing::Standard;
