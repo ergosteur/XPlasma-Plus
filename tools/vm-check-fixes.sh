@@ -80,6 +80,6 @@ fonts_in_16_fields() { # Qt before 6.11 (KDE Frameworks on Plasma 6.3) rejects t
 [ "$(python3 -c "import json;print('taskbar' in json.load(open('$HOME/.local/share/kde-xp-suite/installation.json'))['features'])")" = True ] \
   && check "Quick Launch beside Start (panel order)" quick_launch_after_start
 check "XP fonts in the form every Qt 6 reads (16 fields)" fonts_in_16_fields
-check "desktop icon cell 82px rule""grep -q 'XPlasma: XP kept \"My Documents\" on one line' ~/.local/share/plasma/plasmoids/org.kde.desktopcontainment/contents/ui/FolderView.qml"
+check "desktop icon cell 82px rule" "grep -q 'XPlasma: XP kept \"My Documents\" on one line' ~/.local/share/plasma/plasmoids/org.kde.desktopcontainment/contents/ui/FolderView.qml"
 check "caption animation plugin loads (no version error this boot)" "! journalctl --user -b -q | grep -q 'xp-caption-animation.*built for a different version'"
 echo "== $ok OK, $bad FAIL"

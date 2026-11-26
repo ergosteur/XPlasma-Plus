@@ -94,7 +94,8 @@ bool apply(Session &session,const Look &source,bool dark,QString *error){
  if(!session.run({QStringLiteral("plasma-apply-colorscheme"),schemeId}).ok()){if(error)*error=QStringLiteral("Could not apply application colors");return false;}
  state.settings.insert(QStringLiteral("darkMode"),dark);if(!state.save(error))return false;
  maintenance::run(session);
- if(state.settings.value(QStringLiteral("crispText")).toBool())return crisptext::apply(session,true,error);
+ // ("Crisp XP text" is retired, replaced by Display Properties' font smoothing: off where it was on.)
+ if(state.settings.value(QStringLiteral("crispText")).toBool() && !crisptext::apply(session,false,error))return false;
  return publish(dark,error);
 }
 }
