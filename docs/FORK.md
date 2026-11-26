@@ -72,3 +72,8 @@ What has been covered so far: Fedora 45 (Plasma 6.8, also with Fedora Budgie's `
   default `/tmp/xp-dev-bundle` and can stomp each other's copy mid-rsync (`rsync` exit 24, "files vanished"), or
   worse, not error and silently copy a mixed-up bundle. Give each a distinct `--bundle` path, or run them one at a
   time.
+- An upgrade that re-selects the same theme with a newly-enabled font/icon customization (ClearType, keep Firefox's
+  icon) didn't apply it: `applyLook()`'s `colorOnly` shortcut (meant for Display Properties' live colour preview)
+  also kicked in from the installer whenever the look/taskbar/decoration all looked already in place, which forced
+  `o.fonts`/`o.icons` off regardless of what changed. The installer's own `apply` call now always passes
+  `--no-color-only`.

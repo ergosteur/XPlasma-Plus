@@ -315,7 +315,12 @@ def presets(home):
   (dest/(name+'.theme')).write_text('[Theme]\nDisplayName='+name+'\n\n[VisualStyles]\nPath='+str(base/style)+'\nColorStyle='+colour+'\nSize=NormalSize\n\n[Control Panel\\Desktop]\nWallpaper='+str(home/'.local/share/xplasma/assets/wallpapers/Bliss.jpg')+'\nWallpaperStyle=2\nTileWallpaper=0\n')
  return dest
 def look_args(cli,theme,selected):
- args=[str(cli),'apply',str(theme)]
+ # --no-color-only: never the shortcut that skips fonts/icons/properties/sounds
+ # when the look looks unchanged -- an upgrade re-applying the same theme with
+ # a newly toggled tweak (ClearType, keep Firefox's icon...) needs them redone
+ # even though nothing about the look itself changed. Display Properties' own
+ # live colour preview is the only thing that shortcut is meant to speed up.
+ args=[str(cli),'apply',str(theme),'--no-color-only']
  for feature,flags in {'desktop':['--no-colours','--no-decoration'],'fonts':['--no-fonts'],'apps':['--no-widgets'],
   'taskbar':['--no-taskbar'],'icons':['--no-icons'],'sounds':['--no-sounds'],'wallpaper':['--no-wallpaper'],'theme_manager':['--no-properties']}.items():
   if feature not in selected:args.extend(flags)

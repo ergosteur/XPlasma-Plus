@@ -218,6 +218,10 @@ int apply(const QString &name, const QCommandLineParser &parser)
         return 1;
     }
     ApplyOptions o;
+    // (The installer always passes --no-color-only: its apply is a one-shot,
+    // deterministic operation, not Display Properties' live colour preview,
+    // which is the only thing the shortcut is meant to speed up.)
+    o.allowColorOnly = !parser.isSet(QStringLiteral("no-color-only"));
     o.properties = !parser.isSet(QStringLiteral("no-properties"));
     o.colours = !parser.isSet(QStringLiteral("no-colours"));
     o.decoration = !parser.isSet(QStringLiteral("no-decoration"));
@@ -591,7 +595,7 @@ int main(int argc, char **argv)
     parser.addVersionOption();
     parser.addPositionalArgument(QStringLiteral("command"), QStringLiteral("list | check | apply LOOK | dark on/off | widgets LOOK | pointers [SCHEME] | sounds [SCHEME|off] | reset | setup | build LOOK"));
     parser.addOption(QCommandLineOption(QStringLiteral("media"), QStringLiteral("XP's install media (an ISO, or a folder with I386)."), QStringLiteral("PATH")));
-    for (const char *name : {"no-properties", "no-colours", "no-decoration", "no-fonts", "no-widgets", "no-taskbar", "no-icons", "no-sounds", "no-wallpaper", "download-media", "no-packs", "all-packs", "no-shadow"})
+    for (const char *name : {"no-properties", "no-colours", "no-decoration", "no-fonts", "no-widgets", "no-taskbar", "no-icons", "no-sounds", "no-wallpaper", "download-media", "no-packs", "all-packs", "no-shadow", "no-color-only"})
         parser.addOption(QCommandLineOption(QString::fromLatin1(name)));
     const QCommandLineOption jsonOption(QStringLiteral("json"), QStringLiteral("Machine-readable output."));
     parser.addOption(jsonOption);
