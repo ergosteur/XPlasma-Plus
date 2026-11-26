@@ -86,7 +86,7 @@
       "xr.png": "Game Controller",
       "drm.png": "WMP Copy Protected Music"
     },
-    "adaptation": "Blocked-permission variants add a red/white slash. Classic close/arrow glyphs are XPlasma GPL-3.0-or-later code-native vectors."
+    "adaptation": "Blocked-permission variants add a red/white slash drawn by build-blocked-icons.py (GPL code). Classic close/arrow glyphs are XPlasma GPL-3.0-or-later code-native vectors."
   },
   "application_icon": {
     "artist": "marchmountain",
