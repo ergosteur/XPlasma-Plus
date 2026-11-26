@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // XPlasma: where notifications' balloons come from, XP-style. An app with
-// its own icon in the tray gets its balloon from that; the rest get an icon
-// here while their balloon waits its turn or shows, marked with a small red
-// dot if it timed out unread (gone while it shows again), and a click shows
-// it again. (The queue is the notifications applet's; this only draws it.)
+// its own icon in the tray gets its balloon from that; the rest share one
+// icon per sender here (not one per notification -- a burst from one app
+// doesn't fill the tray), marked with a small red dot if any of that
+// sender's are timed out unread, and a click shows the oldest of those
+// again. (The queue is the notifications applet's; this only draws it.)
 import QtQuick
 
 import org.kde.kirigami as Kirigami
@@ -78,26 +79,54 @@ Grid {
                 notifications.xpRegisterIcon(queue[i].id, owners[i]);
     }
 
+    // The rest (no owned icon), by sender: one entry per sender, its
+    // notifications oldest first.
+    function senderKey(entry) {
+        return (entry.desktopEntry || "").toLowerCase() || ("name:" + simple(entry.applicationName));
+    }
+    readonly property var groups: {
+        const byKey = {}, order = [];
+        for (let i = 0; i < queue.length; ++i) {
+            if (owners[i])
+                continue;
+            const key = senderKey(queue[i]);
+            if (!byKey[key]) {
+                byKey[key] = [];
+                order.push(key);
+            }
+            byKey[key].push(queue[i]);
+        }
+        return order.map(key => byKey[key]);
+    }
+
     Repeater {
         id: drawn
-        // (newest first: XP adds tray icons on the left, so the ones
+        // (newest sender first: XP adds tray icons on the left, so the ones
         // already there -- and a balloon pointing at one -- stay put)
-        model: icons.queue.filter((entry, i) => !icons.owners[i]).reverse()
+        model: [...icons.groups].reverse()
         Item {
             id: cell
-            required property var modelData
-            width: icons.vertical ? icons.thickness : 16
-            height: icons.vertical ? 16 : icons.thickness
+            required property var modelData   // this sender's queued entries, oldest first
+            readonly property var latest: modelData[modelData.length - 1]
             // Unread: a small steady dot in the corner, not a blink -- XP's own
             // disabled-mark red (xp_marks.red_x), so it reads as "needs you"
-            // without the whole tray flashing.
-            readonly property bool unread: modelData.unread && modelData.id !== icons.shownId
+            // without the whole tray flashing. A click shows the oldest one
+            // still unread (the others wait their own turn as usual).
+            readonly property var recallable: modelData.find(e => e.unread && e.id !== icons.shownId) || null
+            readonly property bool unread: recallable !== null
+            width: icons.vertical ? icons.thickness : 16
+            height: icons.vertical ? 16 : icons.thickness
+            function registerAll() {
+                for (const e of modelData)
+                    icons.notifications.xpRegisterIcon(e.id, icon);
+            }
+            onModelDataChanged: registerAll()
             Kirigami.Icon {
                 id: icon
                 anchors.centerIn: parent
                 width: 16
                 height: 16
-                source: cell.modelData.icon
+                source: cell.latest.icon
             }
             Rectangle {
                 visible: cell.unread
@@ -117,10 +146,10 @@ Grid {
             }
             MouseArea {
                 anchors.fill: parent
-                onClicked: icons.notifications.xpIconClicked(cell.modelData.id)
+                onClicked: if (cell.recallable) icons.notifications.xpIconClicked(cell.recallable.id)
             }
-            Component.onCompleted: icons.notifications.xpRegisterIcon(cell.modelData.id, icon)
-            Component.onDestruction: if (icons.notifications) icons.notifications.xpUnregisterIcon(cell.modelData.id, icon)
+            Component.onCompleted: registerAll()
+            Component.onDestruction: if (icons.notifications) for (const e of modelData) icons.notifications.xpUnregisterIcon(e.id, icon)
         }
     }
 }

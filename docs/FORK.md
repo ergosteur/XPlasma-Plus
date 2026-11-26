@@ -64,3 +64,11 @@ What has been covered so far: Fedora 45 (Plasma 6.8, also with Fedora Budgie's `
   without GRUB's install disk (`grub-pc/install_devices`), which breaks the first `apt full-upgrade` of a fresh VM.
 - Don't run Qt GUI programs (`plasmashell --version`, `dolphin --version`) over SSH in an Ubuntu guest: they abort
   without a display and leave Apport crash reports that show up on the desktop.
+- `DelegateChooser`'s `when:` property (arbitrary per-row conditions, as opposed to `roleValue` matching) needs
+  Qt 6.9; Fedora 45, Kubuntu 26.04 and Debian 13 are all below that. Its `Qt.labs.qmlmodels` module needs its own
+  import alongside `QtQml.Models` either way (`DelegateChoice` moved there; `DelegateChooser` hasn't), matching how
+  KDE's own `ClipboardMenu.qml` imports both.
+- Running `tools/vm-test.sh` against more than one VM at once without `--bundle`: they all build into the same
+  default `/tmp/xp-dev-bundle` and can stomp each other's copy mid-rsync (`rsync` exit 24, "files vanished"), or
+  worse, not error and silently copy a mixed-up bundle. Give each a distinct `--bundle` path, or run them one at a
+  time.

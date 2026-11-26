@@ -41,7 +41,11 @@ QtObject {
     readonly property bool isJob: type === NotificationManager.Notifications.JobType
     readonly property bool finished: isJob && jobState === NotificationManager.Notifications.JobStateStopped
     readonly property bool failed: finished && jobError !== 0
-    readonly property bool wantsBalloon: !isJob || failed
+    // Some senders skip XP's balloon (and its tray icon) entirely: always
+    // (a browser, a chat app -- Globals.xpAlwaysNative) or only while
+    // they're bursting (Globals.xpUseXPBalloon). Still recorded in Plasma's
+    // own notification history as always; just no XP-styled toast for it.
+    readonly property bool wantsBalloon: (!isJob || failed) && Globals.xpUseXPBalloon(desktopEntry, applicationName)
     readonly property bool shown: Globals.xpCurrentId === notificationId
 
     // XP's icons for how serious it is: a warning for critical ones, an
@@ -75,7 +79,7 @@ QtObject {
     // transfer just stopped with an error reads "finished, not failed".)
     function sync() {
         const done = isJob && jobState === NotificationManager.Notifications.JobStateStopped;
-        const wants = !isJob || (done && jobError !== 0);
+        const wants = (!isJob || (done && jobError !== 0)) && Globals.xpUseXPBalloon(desktopEntry, applicationName);
         if (wants && !recalled)
             Globals.xpEnqueue(popup);
         if (wants && !balloon)

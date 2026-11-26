@@ -16,9 +16,12 @@
 //     Plasma's own too, a clock or the keyboard layout's label.
 //   * Notifications (org.kde.plasma.notifications), as XP's balloons when
 //     the panel theme has their art (widgets/xp-notify): one at a time from
-//     the sender's tray icon -- or an icon of its own, next to the others,
-//     marked with a small red dot if it went unread -- and file transfers as XP's copy
-//     dialog.
+//     the sender's tray icon -- or an icon shared by every notification
+//     still queued from that sender, marked with a small red dot if any of
+//     them went unread -- and file transfers as XP's copy dialog. A sender
+//     XPlasma treats as always-native (a browser, a chat app) or that's
+//     currently bursting skips XP's balloon and icon entirely, every time;
+//     it's still in Plasma's own notification history as always.
 //   * The desktop (org.kde.desktopcontainment), whose right-click menu gets
 //     XP's Properties, as "XPlasma Properties"; and where
 //     what's dragged from the Start menu lands as a shortcut (a link),

@@ -694,12 +694,28 @@ oracle tooling (`refharness/`, `tests/oracle/`) stays Python, dev-only
   it is an error.
 - **Notifications as XP's balloons** (a patched `org.kde.plasma.notifications`,
   active when the panel theme has `widgets/xp-notify`): one balloon at a
-  time, oldest first, from the sender's own tray icon or a temporary one;
-  the rest wait as icons, and one that timed out unread stays, marked with
-  a small red dot, until clicked (it shows again). File transfers are
-  XP's copy dialog (shell32's animations, Cancel kills the job). Colours
-  come from the application palette (`Window.palette` has the tooltip
-  pair; `SystemPalette` doesn't), not Kirigami's, which are the panel's.
+  time, oldest first, from the sender's own tray icon or one shared by every
+  notification still queued from that sender; one that timed out unread
+  stays, marked with a small red dot, until clicked (it shows again). File
+  transfers are XP's copy dialog (shell32's animations, Cancel kills the
+  job). Colours come from the application palette (`Window.palette` has the
+  tooltip pair; `SystemPalette` doesn't), not Kirigami's, which are the
+  panel's. A sender XPlasma always treats as native (a browser -- its own
+  notices and any website's -- or a chat/IRC app, `xpAlwaysNative`/
+  `xpNativeSenders`/`xpNativePrefixes`/`xpNativeNames` in xp-globals.qml) or
+  that's currently bursting (more of its notifications queued than
+  `xpBurstThreshold`) skips XP's balloon and tray icon entirely
+  (`XpPopup.qml`'s `wantsBalloon`/`sync()`, both gated by
+  `Globals.xpUseXPBalloon`) -- XP's balloon never existed for the volume
+  modern chat apps send at. It's still in Plasma's own notification history
+  as always, just with no transient XP-styled toast. (A genuine switch to
+  Plasma's own *popup* per notification -- its stacking, grouping, Do Not
+  Disturb awareness, not just "no XP toast" -- would need the Instantiator's
+  delegate to vary per row, e.g. `DelegateChooser`'s `when:`; unavailable
+  before Qt 6.9, which none of this fork's supported Plasma versions ship,
+  so not attempted.) The installer's "Plasma notification popups"
+  customization (a single global switch, still there) remains the only way
+  to get Plasma's actual popup instead of XP's, for everything at once.
 - **`xplasma`** (CLI) and **`xplasma-edit`** (Display Properties, Qt Widgets
   in the system's own widget style; only the samples are drawn by XPlasma).
 - **Date and Time Properties** (`xplasma-edit --date-time`, the clock's
