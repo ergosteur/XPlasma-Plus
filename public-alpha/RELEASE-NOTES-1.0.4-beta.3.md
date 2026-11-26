@@ -5,7 +5,7 @@ An unofficial fork of [andymenard/XPlasma-Plus](https://github.com/andymenard/XP
 ## Changed since Beta 2
 
 - **The XP lock screen is gone.** It was ticked by default and broke on Plasma 6.8. The lock screen is now always Plasma's own, with XP's Welcome screen as its background when the wallpaper is installed; Plasma's lock screen keeps working across Plasma updates. Upgrading an installation that has the XP lock screen (or removing it) deletes it, and Plasma's lock screen comes back. A Plasma shell you customized yourself is left alone, and Setup says where it is.
-- **IE6 Firefox: wrong Display Properties icon.** The picture-in-picture button shows XP's cascading windows now, and the screen-sharing permission and indicator show XP's screen-sharing icon (RTC Share), crossed out when blocked.
+- **IE6 Firefox: wrong Display Properties icon.** The picture-in-picture button shows XP's cascading windows now, and the screen-sharing permission and indicator show XP's screen-sharing icon (RTC Share), crossed out when blocked. The slash on every blocked-permission icon is redrawn cleanly.
 
 ## Tested
 
