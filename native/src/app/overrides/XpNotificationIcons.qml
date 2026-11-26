@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // XPlasma: where notifications' balloons come from, XP-style. An app with
 // its own icon in the tray gets its balloon from that; the rest get an icon
-// here while their balloon waits its turn or shows, left blinking if it
-// timed out unread (steady while it shows again), and a click shows it
-// again. (The queue is the notifications applet's; this only draws it.)
+// here while their balloon waits its turn or shows, marked with a small red
+// dot if it timed out unread (gone while it shows again), and a click shows
+// it again. (The queue is the notifications applet's; this only draws it.)
 import QtQuick
 
 import org.kde.kirigami as Kirigami
@@ -88,32 +88,32 @@ Grid {
             required property var modelData
             width: icons.vertical ? icons.thickness : 16
             height: icons.vertical ? 16 : icons.thickness
-            // Unread, it blinks -- each icon to its own beat, like cars'
-            // indicators at a light: a rate of its own, a little uneven
-            // flash to flash, drifting in and out of step with the others.
-            readonly property bool blinking: modelData.unread && modelData.id !== icons.shownId
-            readonly property int beat: 420 + Math.floor(Math.random() * 180)
-            property bool lit: true
-            Timer {
-                running: cell.blinking
-                repeat: true
-                interval: cell.beat
-                onTriggered: {
-                    cell.lit = !cell.lit;
-                    interval = cell.beat + Math.floor(Math.random() * 80) - 40;
-                }
-                onRunningChanged: {
-                    cell.lit = true;
-                    interval = Math.floor(Math.random() * cell.beat) + 1;   // (from anywhere in its beat)
-                }
-            }
+            // Unread: a small steady dot in the corner, not a blink -- XP's own
+            // disabled-mark red (xp_marks.red_x), so it reads as "needs you"
+            // without the whole tray flashing.
+            readonly property bool unread: modelData.unread && modelData.id !== icons.shownId
             Kirigami.Icon {
                 id: icon
                 anchors.centerIn: parent
                 width: 16
                 height: 16
                 source: cell.modelData.icon
-                opacity: cell.blinking && !cell.lit ? 0 : 1
+            }
+            Rectangle {
+                visible: cell.unread
+                width: 6
+                height: 6
+                radius: width / 2
+                anchors.right: icon.right
+                anchors.bottom: icon.bottom
+                anchors.rightMargin: -1
+                anchors.bottomMargin: -1
+                border.width: 1
+                border.color: "#800e12"
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#ec5450" }
+                    GradientStop { position: 1.0; color: "#c4161a" }
+                }
             }
             MouseArea {
                 anchors.fill: parent

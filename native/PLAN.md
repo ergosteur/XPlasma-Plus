@@ -695,8 +695,8 @@ oracle tooling (`refharness/`, `tests/oracle/`) stays Python, dev-only
 - **Notifications as XP's balloons** (a patched `org.kde.plasma.notifications`,
   active when the panel theme has `widgets/xp-notify`): one balloon at a
   time, oldest first, from the sender's own tray icon or a temporary one;
-  the rest wait as icons, and one that timed out unread stays, blinking to
-  a beat of its own, until clicked (it shows again). File transfers are
+  the rest wait as icons, and one that timed out unread stays, marked with
+  a small red dot, until clicked (it shows again). File transfers are
   XP's copy dialog (shell32's animations, Cancel kills the job). Colours
   come from the application palette (`Window.palette` has the tooltip
   pair; `SystemPalette` doesn't), not Kirigami's, which are the panel's.

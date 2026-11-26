@@ -36,7 +36,7 @@ QtObject {
     property int jobError: 0
     property var jobDetails: null
     property bool killable: false
-    property bool recalled: false       // shown again from its blinking icon
+    property bool recalled: false       // shown again from its dot-marked icon
 
     readonly property bool isJob: type === NotificationManager.Notifications.JobType
     readonly property bool finished: isJob && jobState === NotificationManager.Notifications.JobStateStopped

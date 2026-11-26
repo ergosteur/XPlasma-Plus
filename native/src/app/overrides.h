@@ -17,7 +17,7 @@
 //   * Notifications (org.kde.plasma.notifications), as XP's balloons when
 //     the panel theme has their art (widgets/xp-notify): one at a time from
 //     the sender's tray icon -- or an icon of its own, next to the others,
-//     which blinks if it went unread -- and file transfers as XP's copy
+//     marked with a small red dot if it went unread -- and file transfers as XP's copy
 //     dialog.
 //   * The desktop (org.kde.desktopcontainment), whose right-click menu gets
 //     XP's Properties, as "XPlasma Properties"; and where

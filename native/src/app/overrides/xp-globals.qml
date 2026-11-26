@@ -2,7 +2,7 @@
     // XPlasma: XP's balloons in place of Plasma's popups, when the look
     // brings their art (widgets/xp-notify). One balloon at a time, oldest
     // first; the rest wait as icons in the tray (xpQueue), and a balloon that
-    // timed out unread leaves its icon behind, blinking, to show it again.
+    // timed out unread leaves its icon behind, dot-marked, to show it again.
     property int xpArtVersion: 0
     property KSvg.Svg xpArt: KSvg.Svg {
         imagePath: "widgets/xp-notify"
@@ -46,7 +46,7 @@
         if (xpEntry(id))
             xpQueue = xpQueue.filter(e => e.id !== id);
     }
-    // Timed out unread: the icon stays, blinking, with what to show again.
+    // Timed out unread: the icon stays, dot-marked, with what to show again.
     function xpExpired(popup) {
         const snapshot = {
             summary: popup.summary,
@@ -63,7 +63,7 @@
         xpQueue = xpQueue.map(e => e.id === popup.notificationId ? Object.assign({}, e, {unread: true, snapshot: snapshot}) : e);
     }
     // A notification leaving the history -- dismissed from it, or the history
-    // cleared -- takes its icon with it, blinking or not: an icon for a
+    // cleared -- takes its icon with it, dot-marked or not: an icon for a
     // notification the list no longer has would be one only a click could
     // remove. (A transient one was never kept in the history; its icon stays
     // until clicked, as it did.)
@@ -84,7 +84,7 @@
             }
         }
     }
-    // A popup gone: its icon too, unless it's left blinking.
+    // A popup gone: its icon too, unless it's left dot-marked.
     function xpDropped(id) {
         const e = xpEntry(id);
         if (e && !e.unread)
