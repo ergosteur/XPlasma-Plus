@@ -30,7 +30,7 @@
 # ~/xp-install.log in the guest. Exit status: the installer's (and Remove's).
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-ALL=apps,behavior,boot,caption_animation,desktop,desktop_icons,firefox,fonts,icons,lock,login,pointers,session,sounds,taskbar,theme_manager,user_pictures,wallpaper,welcome_splash
+ALL=apps,behavior,boot,caption_animation,desktop,desktop_icons,firefox,fonts,icons,login,pointers,session,sounds,taskbar,theme_manager,user_pictures,wallpaper,welcome_splash
 FEATURES="" TWEAKS="" THEME=Royale OPTIONS="" PREPARE="" BUNDLE="" REVERT=1 CHECK=0 REMOVE=0
 while [ $# -gt 0 ]; do case $1 in
   --vm) f=${XDG_CONFIG_HOME:-$HOME/.config}/xplasma-vm-test/$2.env; [ -f "$f" ] || { echo "no $f" >&2; exit 2; }
