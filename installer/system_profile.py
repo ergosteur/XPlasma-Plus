@@ -71,14 +71,14 @@ def capabilities(profile,features):
   for name in names:result[name]=reason
  if profile['plasma'][0]!=6 or not profile['writer']:
   disable([n for n in result if n not in {'firefox','firefox_default','codex_colors','clippy','desktop_icons'}],'Requires Plasma 6 and kwriteconfig6.')
- if not profile['kde']:disable(['wallpaper','taskbar','behavior','session','lock','tray'],'Run inside a KDE Plasma session.')
+ if not profile['kde']:disable(['wallpaper','taskbar','behavior','session','tray'],'Run inside a KDE Plasma session.')
  if not shutil.which('plasma-apply-cursortheme'):disable(['pointers'],'Plasma cursor-theme utility is missing.')
  if not shutil.which('fc-cache'):disable(['fonts'],'Fontconfig is missing.')
  if not profile['dbus']:disable(['wallpaper','taskbar','behavior'],'Qt 6 qdbus is missing; install the distribution Qt tools first.')
  if profile['qt']<(6,6,0):disable(['theme_manager','desktop','apps','taskbar'],'XPlasma requires Qt 6.6 or newer; Qt development tools must be installed for detection.')
  if profile['plasma']<(6,6,0):disable(['tray'],'XP tray panels require Plasma 6.6 or newer.')
  if not widget_series(profile):disable(['taskbar'],'This Plasma/Qt combination has no verified XP widget port. The XP taskbar cannot be replaced with stock widgets; update the installer when its port is available.')
- if widget_target(profile) not in {'6.6','6.7','6.8'}:disable(['session','lock','caption_animation'],'This optional shell integration needs a matching Plasma recipe. Other XP desktop features remain available.')
+ if widget_target(profile) not in {'6.6','6.7','6.8'}:disable(['session','caption_animation'],'This optional shell integration needs a matching Plasma recipe. Other XP desktop features remain available.')
  if not profile['family']:
   disable(['pinball','minesweeper','solitaire'],'Game build dependencies require a supported package-manager adapter.')
  if not profile['family']:disable(['theme_manager','desktop','apps','taskbar','login','boot','caption_animation'],'Automatic dependency installation supports APT, DNF, pacman, Zypper and XBPS families.')
@@ -86,10 +86,6 @@ def capabilities(profile,features):
  if not profile['systemd']:disable(['login'],'Automatic display-manager switching requires systemd. Other desktop features use XDG autostart.')
  if not profile['boot']:disable(['boot'],'Requires dracut or update-initramfs to rebuild the boot image; neither was found.')
  elif not profile['splash']:disable(['boot'],'The kernel command line has no splash or rhgb option, so Plymouth is not showing a boot splash. Enable it in your bootloader first; the installer does not alter bootloader arguments.')
- # (Unless it's the XP lock screen's own, which an upgrade replaces.)
- try:installed=set(json.loads((Path.home()/'.local/share/kde-xp-suite/installation.json').read_text()).get('features',[]))
- except (OSError,ValueError):installed=set()
- if 'lock' not in installed and (Path.home()/'.local/share/plasma/shells/org.kde.plasma.desktop').exists():disable(['lock'],'A custom user Plasma shell is already installed.')
  manager=screens_manager()
  if manager:disable(['login','boot'],'The XPlasma Plus installation of the '+manager+' account manages the system login and boot screens, which already apply to every account. Remove it there to manage them from this account.')
  return result

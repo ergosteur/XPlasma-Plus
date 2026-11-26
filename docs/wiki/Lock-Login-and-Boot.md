@@ -4,16 +4,16 @@ These are separate parts of the desktop. Select the desired features in Setup; u
 
 | Screen | When it appears | How to test |
 | --- | --- | --- |
-| XP lock screen | Lock the running Plasma session, including lid-close locking when configured | Save work, then use KDE's Lock action; unlock with your normal credentials. |
+| Lock screen | Lock the running Plasma session, including lid-close locking when configured | Save work, then use KDE's Lock action; unlock with your normal credentials. |
 | XP Welcome login screen | The SDDM greeter before starting a user session | Save work and log out; the system must be configured to use SDDM. |
 | XP Welcome desktop splash | While the Plasma session starts after authentication | Log out and back in. |
 | XP boot splash | Plymouth during system boot | Reboot after Setup and the boot-image rebuild finish successfully. |
 
 ## Lock screen
 
-![Installed XP lock screen captured in KDE test mode at 1024×768](https://raw.githubusercontent.com/andymenard/XPlasma-Plus/main/docs/screenshots/07-lockscreen-1024x768.png)
+The lock screen is Plasma's own, with XP's Welcome screen (blue, with the XP banding) as its background when the wallpaper feature is installed; only its settings are changed, none of Plasma's files. The account picture is the one in **System Settings → Users**, where the XP account pictures are also offered.
 
-This is a capture of the installed theme in KDE's test mode. The account picture follows the user picture supplied by KDE; XP account pictures are also installed for selection in **System Settings → Users**. Change the account avatar there rather than expecting the wallpaper to control it.
+Earlier releases (up to 1.0.4-beta.2) had an optional XP lock screen theme. It broke on Plasma 6.8 and was removed from this fork in 1.0.4-beta.3; upgrading or removing an installation that has it deletes it and Plasma's lock screen comes back.
 
 A lock screen keeps your applications running. A full logout ends that session. On systems with other logged-in users, session switching can expose another session's lock screen; do not assume every password screen is SDDM. Include which action you used and whether other sessions exist when reporting a mismatch.
 

@@ -239,7 +239,7 @@ def preflight(selected,installed=()):
  if os.geteuid()==0:raise RuntimeError('Launch this installer as your desktop user, not as root.')
  for other in ['kubuntu-xp-suite']:
   if (Path.home()/'.local/share'/other/'installation.json').exists():raise RuntimeError('Remove the existing '+other+' installation before using the portable installer.')
- if selected&(NATIVE|{'fonts','icons','pointers','sounds','wallpaper','behavior','session','lock','login','boot'}) and (Path.home()/'.local/share/fedora-xp-installer/installation.json').exists():raise RuntimeError('The older Fedora XP installer manages these desktop features. Remove it before installing overlapping components; Explorer and Control Panel can be installed separately.')
+ if selected&(NATIVE|{'fonts','icons','pointers','sounds','wallpaper','behavior','session','login','boot'}) and (Path.home()/'.local/share/fedora-xp-installer/installation.json').exists():raise RuntimeError('The older Fedora XP installer manages these desktop features. Remove it before installing overlapping components; Explorer and Control Panel can be installed separately.')
  profile=detect()
  unsupported=capabilities(profile,FEATURES)
  errors=[name+': '+unsupported[name] for name in selected if unsupported[name]]
@@ -256,7 +256,7 @@ def preflight(selected,installed=()):
  # inventory can safely restore them; individual theme-resource links are fine.
  home=Path.home()
  managed=[home/'.local/share'/STATE_NAME]
- if selected&NATIVE or selected&{'behavior','session','lock','fonts','icons','pointers','sounds','wallpaper'}:
+ if selected&NATIVE or selected&{'behavior','session','fonts','icons','pointers','sounds','wallpaper'}:
   managed += [home/p for p in USER_PATHS if p.startswith('.config/') or p.startswith('.local/share/plasma') or p.startswith('.local/lib/')]
  for feature,paths in {'fonts':['.local/share/fonts/xp'],'icons':['.local/share/icons'],'pointers':['.local/share/icons','.icons','.local/share/xplasma/cursor-sync.py','.config/systemd/user/xp-cursor-sync.path','.config/systemd/user/xp-cursor-sync.service'],'sounds':['.local/share/sounds','.local/share/knotifications6'],'wallpaper':['.local/share/xplasma']}.items():
   if feature in selected:managed.extend(home/path for path in paths)
@@ -271,8 +271,6 @@ def preflight(selected,installed=()):
    if path==home:break
    if path.is_symlink():links.add(str(path))
  if links:raise RuntimeError('Managed configuration contains symbolic links; safe backup requires regular paths: '+', '.join(sorted(links)))
- # (An upgrade replaces the lock screen shell it installed itself.)
- if 'lock' in selected and 'lock' not in installed and (Path.home()/'.local/share/plasma/shells/org.kde.plasma.desktop').exists():raise RuntimeError('A custom Plasma shell is already present. Uncheck XP lock screen to preserve it.')
 def verify():
  manifest=BASE/'SHA256SUMS.json'
  if not manifest.exists():raise RuntimeError('The package checksum manifest is missing.')
@@ -599,16 +597,18 @@ def lock_screen_wallpaper(home,state):
  # instead (installer/lockscreen.py; settings only, Plasma's files untouched).
  import lockscreen
  lockscreen.apply(home,state/'templates',detect()['writer'],run,log)
-def lock_screen(home,state,upgrade=False):
- src=Path('/usr/share/plasma/shells/org.kde.plasma.desktop');dest=home/'.local/share/plasma/shells/org.kde.plasma.desktop'
- # (Its own shell from the release being upgraded: links to the system's
- # files and copies of the XP lock screen, rebuilt from this release.)
- if upgrade and dest.is_dir() and not dest.is_symlink():shutil.rmtree(dest)
- dest.mkdir(parents=True);copy(src/'metadata.json',dest/'metadata.json');(dest/'contents').mkdir()
- for p in (src/'contents').iterdir():
-  if p.name!='lockscreen':(dest/'contents'/p.name).symlink_to(p)
- copy(state/'templates/lockscreen',dest/'contents/lockscreen')
- copy(state/'templates/sddm/assets',dest/'contents/lockscreen/assets')
+def retire_xp_lock_screen(home):
+ # The XP lock screen was an installer feature until 1.0.4-beta.3: a user copy of
+ # Plasma's desktop shell (links to the system's files plus its own lockscreen/),
+ # which broke on Plasma 6.8. Plasma's own lock screen, with XP's Welcome screen as
+ # its background (lock_screen_wallpaper), replaces it. Remove that shell only if
+ # it is the installer's: every entry but lockscreen/ a link into the system shell.
+ dest=home/'.local/share/plasma/shells/org.kde.plasma.desktop';system='/usr/share/plasma/shells/org.kde.plasma.desktop/'
+ contents=dest/'contents'
+ if not dest.is_dir() or dest.is_symlink() or not (contents/'lockscreen').is_dir():return
+ if any(p.name!='lockscreen' and not (p.is_symlink() and os.readlink(p).startswith(system)) for p in contents.iterdir()):
+  log('A customized Plasma shell remains at '+str(dest)+'; the XP lock screen in it is no longer maintained. Remove that folder to use Plasma\'s own lock screen.');return
+ shutil.rmtree(dest);log('Removed the retired XP lock screen; Plasma\'s own lock screen is used again.')
 def firefox_profile_defaults(profile, seed=None):
  # user.js is reapplied on every launch: mutable toolbar choices belong in
  # prefs.js, seeded only for a new profile. Also migrate older payloads.
@@ -784,7 +784,7 @@ def install(selected,theme,asset_options=None):
   if 'session' in selected:phase('Installing persistent XP session menus');session(home,state)
   desktop_updates(home,state,selected,asset_options)
   if 'user_pictures' in selected:phase('Installing XP user account pictures');user_pictures(home)
-  if 'lock' in selected:phase('Installing XP lock screen');lock_screen(home,state,'lock' in installed)
+  if 'lock' in retired:phase('Removing the retired XP lock screen');retire_xp_lock_screen(home)
   if 'firefox' in selected:phase('Installing IE6-style Firefox ESR');firefox(home)
   # (Once: an upgrade keeps a browser chosen since.)
   if 'firefox_default' in selected and 'firefox_default' not in installed:phase('Making IE6 Firefox the default web browser');browser_default(home)
@@ -796,7 +796,7 @@ def install(selected,theme,asset_options=None):
    run(['kwriteconfig6','--file','ksplashrc','--group','KSplash','--key','Engine','none'])
    phase('Installing selected login and boot screens');root('screens',selected,upgrade=bool(installed&{'login','boot'}))
   if 'welcome_splash' in selected:phase('Installing XP Welcome desktop splash');welcome_splash(home)
-  if 'wallpaper' in selected and 'lock' not in selected:lock_screen_wallpaper(home,state)
+  if 'wallpaper' in selected:lock_screen_wallpaper(home,state)
   if 'taskbar' in selected:phase('Checking the XP taskbar');verify_taskbar()
   if tweaks.active(asset_options['tweaks'],selected):phase('Applying customizations');apply_tweaks(asset_options['tweaks'],selected)
   snapshot.finish()
@@ -956,6 +956,8 @@ def uninstall(delete_backups=False):
   paths=json.loads((state/'tracked.json').read_text());conflicts=Snapshot(home,state,paths).restore()
   phase('Removing XP looks and caches made since installation')
   remove_generated(home,json.loads((state/'before.json').read_text()),earlier)
+  # (Made by an installer before 1.0.4-beta.3, when the XP lock screen was a feature.)
+  if 'lock' in set(info['features']):retire_xp_lock_screen(home)
   if earlier:scrub_settings(home)
   if 'firefox' in set(info['features']):
    import firefox_cleanup

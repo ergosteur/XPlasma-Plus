@@ -16,7 +16,7 @@ def packages(family,features,bootstrap=False,native_ready=False,caption_ready=Fa
   if set(features)&NATIVE and not native_ready:groups+=['native']
   if set(features)&({'explorer','control_panel'}|APPS):groups+=['gui']
   groups += [x for x in ['firefox','login','boot','apps'] if x in features]
-  if set(features)&{'lock','session','taskbar'}:groups+=['qml']
+  if set(features)&{'session','taskbar'}:groups+=['qml']
  result=set(' '.join(r[g] for g in groups).split())
  extras={
  'apt':{'paint':'python3-pyqt6.qtwebengine','media_player':'vlc vlc-plugin-skins2','sound_recorder':'python3-pyqt6.qtmultimedia libqt6multimedia6','volume_control':'pulseaudio-utils python3-pyqt6.qtmultimedia','command_prompt':'konsole','task_manager':'python3-psutil','games':'build-essential cmake ninja-build libsdl2-dev','pinball':'libsdl2-mixer-dev','solitaire':'qt6-base-dev qt6-multimedia-dev'},
@@ -65,7 +65,7 @@ def xbps_packages(features,bootstrap=False,native_ready=False,caption_ready=Fals
   'caption_animation':'base-devel cmake ninja extra-cmake-modules kwin-devel qt6-base-devel qt6-declarative-devel libdrm-devel wayland-devel Vulkan-Headers',
  }
  if set(features)&({'explorer','control_panel'}|APPS):groups+=['python3-pyqt6-widgets']
- if set(features)&{'lock','session','taskbar'}:groups+=['qt6-declarative qt6-qt5compat']
+ if set(features)&{'session','taskbar'}:groups+=['qt6-declarative qt6-qt5compat']
  if set(features)&{'pinball','minesweeper','solitaire'}:groups+=['base-devel cmake ninja SDL2-devel']
  for key,value in recipes.items():
   if key in features and not (key=='caption_animation' and caption_ready):groups.append(value)

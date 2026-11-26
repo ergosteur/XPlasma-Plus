@@ -40,7 +40,7 @@ class Folder(unittest.TestCase):
   self.put('assets/xplasma/extracted/explorer.exe');self.put('assets/xplasma/extracted/shell32.dll',self.pe(0x1000))
   self.put('assets/xplasma/assets/themes/Winter Fun Packs 2003/Games/Half-Life_2.wmz')
   self.put('assets/hires-wallpapers/Bliss.jpg');self.put('firefox/firefox-linux-amd64.tar.xz')
-  self.put('templates/sddm/Main.qml');self.put('templates/lockscreen/ours.qml',b'Item {}\n')
+  self.put('templates/sddm/Main.qml');self.put('templates/session/ours.qml',b'Item {}\n')
   with patch('builtins.print'):chosen=self.n.refresh(self.payload.parent,self.public)
   self.assertEqual(chosen,['assets/fonts/tahoma.ttf','assets/user-pictures/PROVENANCE.json','assets/xplasma/assets/themes/Luna/luna.msstyles',
                            'assets/xplasma/assets/themes/Royale/Shell/NormalColor/ShellStyle.dll','basic/pointers/cursors/left_ptr','basic/sounds/stereo/start.wav'])

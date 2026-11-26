@@ -42,8 +42,8 @@ of rights to third-party assets.
 - Firefox theme: browser/ie6/LICENSE-RetroThemesFirefox.
 - Fonts: tools/crisp-text/CREDITS.md and the supplied font metadata.
 - Icons: tools/icon-expansion/CREDITS.md and LICENSES/.
-- KDE adaptations: themes/xp-session/contents/logout/ and
-  themes/xp-lockscreen/MainBlock.qml.
+- KDE adaptations: themes/xp-session/contents/logout/ (the XP lock screen's
+  themes/xp-lockscreen/MainBlock.qml was removed in 1.0.4-beta.3).
 - Logos: native/src/app/editor/logos/COPYING-TUX and COPYING-KDE-LOGO.
 - CC-BY-SA license texts: SPDX license-list-data/text/CC-BY-SA-{3.0,4.0}.txt;
   GNU and CC0 texts: distribution-provided /usr/share/common-licenses/.

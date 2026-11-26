@@ -133,15 +133,6 @@
     "non_free": true
   },
   {
-    "id": "lock",
-    "name": "XP lock screen",
-    "description": "An XP-style password screen using Plasma's existing authentication.",
-    "default": true,
-    "native": false,
-    "project": "desktop",
-    "non_free": true
-  },
-  {
     "id": "login",
     "name": "XP Welcome login screen",
     "description": "SDDM theme and login pointers. Applies on the next login; does not log you out.",

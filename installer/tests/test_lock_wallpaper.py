@@ -29,9 +29,9 @@ class LockWallpaper(unittest.TestCase):
             self.assertEqual(img.getpixel((10, 10)), (0x00, 0x30, 0x9c))           # top band
             self.assertEqual(img.getpixel((960, 540)), lockscreen.WELCOME_BLUE)     # the blue
 
-    def test_only_with_the_wallpaper_and_without_the_xp_lock_screen(self):
+    def test_whenever_the_wallpaper_is_chosen(self):
         text = (ROOT / 'backend.py').read_text()
-        self.assertIn("if 'wallpaper' in selected and 'lock' not in selected:lock_screen_wallpaper(home,state)", text)
+        self.assertIn("if 'wallpaper' in selected:lock_screen_wallpaper(home,state)", text)
 
 
 if __name__ == '__main__':

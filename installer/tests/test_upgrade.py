@@ -174,16 +174,35 @@ class Upgrade(unittest.TestCase):
   b.install({'desktop','taskbar','login'},'Luna Blue')
   self.assertIn(('root','screens',True),self.calls)
 
-class LockScreenCapability(unittest.TestCase):
- def test_own_lock_screen_shell_stays_upgradable(self):
-  import system_profile
-  profile={'plasma':(6,7,5),'writer':'kwriteconfig6','kde':True,'dbus':'qdbus6','qt':(6,11,0),'family':'apt','arch':'amd64','systemd':True,'boot':None,'splash':False}
-  with tempfile.TemporaryDirectory() as home,patch.dict(os.environ,{'HOME':home}):
-   (Path(home)/'.local/share/plasma/shells/org.kde.plasma.desktop').mkdir(parents=True)
-   self.assertTrue(system_profile.capabilities(profile,b.FEATURES)['lock'])
-   state=Path(home)/'.local/share/kde-xp-suite';state.mkdir(parents=True)
-   (state/'installation.json').write_text(json.dumps({'features':['lock']}))
-   self.assertEqual(system_profile.capabilities(profile,b.FEATURES)['lock'],'')
+class RetiredLockScreen(unittest.TestCase):
+ # The XP lock screen (a feature until 1.0.4-beta.3) is gone: an upgrade or Remove
+ # deletes the shell copy an earlier installer made, and nothing else.
+ SYSTEM='/usr/share/plasma/shells/org.kde.plasma.desktop/'
+ def shell(self,home,extra=None):
+  dest=Path(home)/'.local/share/plasma/shells/org.kde.plasma.desktop';contents=dest/'contents'
+  (contents/'lockscreen').mkdir(parents=True);(contents/'lockscreen/MainBlock.qml').write_text('Item {}\n')
+  (dest/'metadata.json').write_text('{}')
+  for name in ('views','applet','configuration'):(contents/name).symlink_to(self.SYSTEM+'contents/'+name)
+  if extra:(contents/extra).mkdir()
+  return dest
+ def test_not_offered(self):
+  self.assertNotIn('lock',b.KNOWN)
+ def test_the_installers_shell_copy_is_removed(self):
+  with tempfile.TemporaryDirectory() as home,patch('builtins.print'):
+   dest=self.shell(home);b.retire_xp_lock_screen(Path(home))
+   self.assertFalse(dest.exists())
+ def test_a_customized_shell_is_kept(self):
+  with tempfile.TemporaryDirectory() as home,patch('builtins.print') as out:
+   dest=self.shell(home,extra='views-mine');b.retire_xp_lock_screen(Path(home))
+   self.assertTrue(dest.exists());self.assertIn('no longer maintained',str(out.call_args))
+ def test_no_shell_nothing_happens(self):
+  with tempfile.TemporaryDirectory() as home:
+   b.retire_xp_lock_screen(Path(home))
+   self.assertFalse((Path(home)/'.local/share/plasma').exists())
+ def test_upgrade_and_remove_call_it(self):
+  text=(Path(b.__file__)).read_text()
+  self.assertIn("if 'lock' in retired:phase('Removing the retired XP lock screen');retire_xp_lock_screen(home)",text)
+  self.assertIn("if 'lock' in set(info['features']):retire_xp_lock_screen(home)",text)
 
 class SystemScreens(unittest.TestCase):
  def setUp(self):

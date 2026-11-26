@@ -33,7 +33,7 @@ class Screens(unittest.TestCase):
   self.marker.write_text(json.dumps({'uid':os.getuid()+1,'user':'owner','features':['boot','login']}))
   support=self.support()
   for name in ['login','boot']:self.assertIn('owner account',support[name])
-  self.assertEqual(support['lock'],'',"only the system screens")
+  self.assertEqual(support['wallpaper'],'',"only the system screens")
 
  def test_the_managing_account_keeps_them_for_an_upgrade(self):
   self.marker.write_text(json.dumps({'uid':os.getuid(),'user':'me','features':['login']}))

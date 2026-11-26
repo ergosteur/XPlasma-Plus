@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """Plasma's own lock screen on the XP desktop: XP's Welcome screen as its background.
 
-Used when the wallpaper feature is chosen and the XP lock screen isn't. Plasma's
+Used whenever the wallpaper feature is chosen (the XP lock screen was retired in 1.0.4-beta.3). Plasma's
 lock screen otherwise keeps the distribution's wallpaper (Fedora's is so light
 that its white text was unreadable). Only settings are written: Plasma's files are
 not modified. (Its blur and tint when the prompt appears stay; the XP taskbar

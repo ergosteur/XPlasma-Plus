@@ -23,7 +23,7 @@ class Compatibility(unittest.TestCase):
   self.assertEqual(support['taskbar'],'')
   self.assertIsNone(profile.widget_target(BASE))
   self.assertEqual(profile.widget_series(BASE),'6.3')
-  self.assertTrue(support['lock']);self.assertTrue(support['caption_animation'])
+  self.assertNotIn('lock',support);self.assertTrue(support['caption_animation'])
  def test_boot_splash_names_the_missing_requirement(self):
   self.assertEqual(self.support()['boot'],'')
   self.assertIn('neither was found',self.support(boot=None)['boot'])
