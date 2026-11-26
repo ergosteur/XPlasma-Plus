@@ -411,7 +411,7 @@ menupopup menuseparator { appearance: none !important; border: 0 !important; bor
 #reader-mode-button-icon { list-style-image:url("ie6-icons/sized/reader.svg") !important; }
 #translations-button-icon { list-style-image:url("ie6-icons/sized/translate.svg") !important; }
 #translations-button-circle-arrows { list-style-image:url("ie6-icons/sized/refresh.svg") !important; }
-#picture-in-picture-button-icon, #document-pip-return-to-opener-button .toolbarbutton-icon { list-style-image:url("ie6-icons/sized/screen.svg") !important; }
+#picture-in-picture-button-icon, #document-pip-return-to-opener-button .toolbarbutton-icon { list-style-image:url("ie6-icons/sized/open-window.svg") !important; }
 #unified-extensions-button .toolbarbutton-icon, .addons-notification-icon { list-style-image:url("ie6-icons/sized/addon.svg") !important; }
 #PanelUI-menu-button .toolbarbutton-icon { list-style-image:url("ie6-icons/sized/menu.svg") !important; }
 #bookmarks-toolbar-button .toolbarbutton-icon { list-style-image:url("ie6-icons/sized/bookmark-folder.svg") !important; }
