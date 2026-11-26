@@ -32,7 +32,8 @@ def main(pack, layer):
         if not item['source'].startswith('Windows XP High Resolution Icon Pack/'):
             continue
         state = build.tray_state(name, item)
-        old_off = bool(re.search(r'-(paused|stop)$', re.sub(r'(-symbolic|-rtl)+$', '', name.lower()))) and name.lower().split('-symbolic')[0] in build.TRAY_ROLES
+        normalized = re.sub(r'(-symbolic|-rtl)+$', '', name.lower())   # matches build.tray_variant()'s normalization
+        old_off = bool(re.search(r'-(paused|stop)$', normalized)) and normalized in build.TRAY_ROLES
         if not any(state) and not old_off:
             continue   # a plain picture: untouched
         canonical = build.tray_canonical(item['source'], *state)
