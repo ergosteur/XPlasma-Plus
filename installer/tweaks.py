@@ -57,7 +57,7 @@ TWEAKS = [
              'New Folder, Stash, Menu, and its menu bar shown (File, Edit, View...) as in XP\'s Explorer.',
      'requires': []},
 ]
-FIREFOX_ICONS = ('firefox', 'org.mozilla.firefox')
+FIREFOX_ICONS = ('firefox', 'org.mozilla.firefox', 'web-browser', 'internet-web-browser')
 CONFIG = 'xplasma-customizationsrc'   # ~/.config; read by the patched desktop QML
 IDS = {t['id'] for t in TWEAKS}
 BY_ID = {t['id']: t for t in TWEAKS}
@@ -76,13 +76,14 @@ def parse(text):
 
 
 def active(chosen, selected):
-    """The chosen tweaks whose required features are all selected."""
-    return [t for t in sorted(chosen) if t in IDS and set(BY_ID[t]['requires']) <= set(selected)]
+    """The chosen tweaks (old ids resolved via ALIASES) whose required features are all selected."""
+    resolved = {ALIASES.get(t, t) for t in chosen}
+    return [t for t in sorted(resolved) if t in IDS and set(BY_ID[t]['requires']) <= set(selected)]
 
 
 def publish(settings, chosen, selected):
     """Record every tweak's effective state for the native runtime."""
-    on = set(active([ALIASES.get(t, t) for t in chosen], selected))
+    on = set(active(chosen, selected))
     settings['installerTweaks'] = {t['id']: t['id'] in on for t in TWEAKS}
     # ClearType is Display Properties' font smoothing: chosen here, it is the desktop's
     # setting from now on (Properties can change it later; unticked here, it's left alone).

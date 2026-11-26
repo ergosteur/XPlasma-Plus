@@ -99,11 +99,12 @@ class Installer(QtWidgets.QMainWindow):
    group=QtWidgets.QTreeWidgetItem(self.tree,['Customizations (optional)']);group.setData(0,QtCore.Qt.ItemDataRole.UserRole,'project:tweaks')
    group.setFlags(group.flags()|QtCore.Qt.ItemFlag.ItemIsUserCheckable|QtCore.Qt.ItemFlag.ItemIsAutoTristate)
    group.setToolTip(0,'Adjustments to the selected features. Each applies only when the features it adjusts are selected.')
+   saved={tweaks.ALIASES.get(t,t) for t in options.get('tweaks',[])}
    for tweak in tweaks.TWEAKS:
     item=QtWidgets.QTreeWidgetItem(group,[tweak['label']]);item.setData(0,QtCore.Qt.ItemDataRole.UserRole,'tweak:'+tweak['id'])
     item.setFlags(item.flags()|QtCore.Qt.ItemFlag.ItemIsUserCheckable)
     item.setToolTip(0,tweak['help']+('\nApplies with: '+', '.join(names.get(r,r) for r in tweak['requires'])+'.' if tweak['requires'] else ''))
-    item.setCheckState(0,QtCore.Qt.CheckState.Checked if tweak['id'] in options.get('tweaks',[]) else QtCore.Qt.CheckState.Unchecked)
+    item.setCheckState(0,QtCore.Qt.CheckState.Checked if tweak['id'] in saved else QtCore.Qt.CheckState.Unchecked)
     self.tweak_items[tweak['id']]=item
    group.setExpanded(bool(options.get('tweaks')))
   quality=QtWidgets.QVBoxLayout()
