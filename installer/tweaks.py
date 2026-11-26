@@ -91,12 +91,12 @@ def publish(settings, chosen, selected):
         settings['fontSmoothing'] = 'cleartype'
 
 
-def prepare(chosen, selected, run):
+def prepare(chosen, selected, run, writer=None):
     """Settings the desktop reads when Plasma's shell starts: written before the
     native apply restarts it. Written both ways, so unticking a tweak undoes it."""
     if 'taskbar' not in selected:
         return
-    writer = shutil.which('kwriteconfig6') or shutil.which('kwriteconfig5')
+    writer = writer or shutil.which('kwriteconfig6') or shutil.which('kwriteconfig5')
     if not writer:
         return
     balloons = 'false' if 'plasma_notifications' in active(chosen, selected) else 'true'
@@ -194,7 +194,7 @@ def dolphin_ui():
             ' </ToolBar>\n</gui>\n')
 
 
-def apply(chosen, selected, run, shell_script, log, home=None, qdbus='qdbus6'):
+def apply(chosen, selected, run, shell_script, log, home=None, qdbus='qdbus6', writer=None):
     """Apply the installer-side tweaks. run/shell_script/log come from backend.py."""
     on = set(active(chosen, selected))
     if 'bell_always_shown' in on:
@@ -226,7 +226,7 @@ def apply(chosen, selected, run, shell_script, log, home=None, qdbus='qdbus6'):
         # instead, unseen, so its other first-run choices (side panels closed) stay.
         if dolphin_settings_version(home) < 200:
             dolphin_first_run(qdbus, log)
-        writer = shutil.which('kwriteconfig6') or shutil.which('kwriteconfig5')
-        if writer:
-            run([writer, '--file', 'dolphinrc', '--group', 'MainWindow', '--key', 'MenuBar', 'Enabled'])
+        resolved_writer = writer or shutil.which('kwriteconfig6') or shutil.which('kwriteconfig5')
+        if resolved_writer:
+            run([resolved_writer, '--file', 'dolphinrc', '--group', 'MainWindow', '--key', 'MenuBar', 'Enabled'])
         log('Customization: Dolphin toolbar and menu bar set (takes effect when Dolphin next starts).')

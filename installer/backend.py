@@ -337,7 +337,7 @@ def prepare_native(home,state,selected,theme,asset_options=None,keep_theme=False
  import tweaks as customizations
  customizations.publish(data['settings'],(asset_options or {}).get('tweaks',[]),selected)
  path.write_text(json.dumps(data,indent=2)+'\n')
- customizations.prepare((asset_options or {}).get('tweaks',[]),selected,run)
+ customizations.prepare((asset_options or {}).get('tweaks',[]),selected,run,writer=detect()['writer'])
  if 'fonts' in selected:copy(BASE/'payload/assets/fonts',home/'.local/share/fonts/xp');run(['fc-cache','-f'])
  build=state/'build'
  phase('Preparing desktop components — first installation may take several minutes')
@@ -976,7 +976,7 @@ def uninstall(delete_backups=False):
      +('Settings backups were deleted. ' if delete_backups else 'Settings backups are kept in '+str(state)+'. ')+'Reopen applications.')
  return 0
 def apply_tweaks(chosen,selected):
- tweaks.apply(chosen,selected,run,lambda script:run([kdbus(),'org.kde.plasmashell','/PlasmaShell','org.kde.PlasmaShell.evaluateScript',script]),log,home=Path.home(),qdbus=kdbus())
+ tweaks.apply(chosen,selected,run,lambda script:run([kdbus(),'org.kde.plasmashell','/PlasmaShell','org.kde.PlasmaShell.evaluateScript',script]),log,home=Path.home(),qdbus=kdbus(),writer=detect()['writer'])
 def main():
  p=argparse.ArgumentParser();p.add_argument('action',choices=['install','uninstall','check','rebuild']);p.add_argument('--features',default='');p.add_argument('--theme',default='Luna Blue');p.add_argument('--hidpi-icons',action='store_true');p.add_argument('--hires-wallpapers',action='store_true');p.add_argument('--dark-mode',action='store_true');p.add_argument('--delete-backups',action='store_true')
  p.add_argument('--tweaks',default=None,help='comma-separated customization ids (see tweaks.py); omitted on an upgrade = keep the installed ones');a=p.parse_args()

@@ -4,8 +4,15 @@
 #include "app/library.h"
 
 #include <QFileInfo>
+#include <QSet>
 
 namespace xpl {
+
+// Royale colour variants whose .msstyles names Microsoft Sans Serif/Trebuchet MS
+// mismatched against the rest of the Royale family (see fromStyle below). Listed
+// by filename since .msstyles carries no family id; add a variant here if it
+// turns out to have the same mismatch.
+static const QSet<QString> kRoyaleFontMismatch = {QStringLiteral("zune"), QStringLiteral("embedded")};
 
 QString packageId(const QString &name)
 {
@@ -39,7 +46,7 @@ std::optional<Look> Look::fromStyle(const QString &path, const QString &variant,
     // Royale Noir already matches. Chosen for this fork: the Royale family reads
     // as one look, in XP's Tahoma and Trebuchet MS.
     const QString styleFile = QFileInfo(path).completeBaseName().toLower();
-    if (styleFile == QLatin1String("zune") || styleFile == QLatin1String("embedded")) {
+    if (kRoyaleFontMismatch.contains(styleFile)) {
         NonClientMetrics &m = look.system.metrics;
         for (LogFont *f : {&m.messageFont, &m.menuFont, &m.statusFont, &look.system.icons.font})
             if (f->face.compare(QLatin1String("Microsoft Sans Serif"), Qt::CaseInsensitive) == 0)

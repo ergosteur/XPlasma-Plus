@@ -51,7 +51,7 @@ def detect():
  sbin=os.pathsep.join([os.environ.get('PATH',''),'/usr/local/sbin','/usr/sbin','/sbin'])
  boot=next((x for x in ['update-initramfs','dracut'] if shutil.which(x,path=sbin)),None)
  return {'name':release.get('PRETTY_NAME','Linux'),'family':family,'arch':arch,'plasma':numbers(plasma),'qt':numbers(qt),
-  'writer':executable('kwriteconfig6'),'dbus':executable('qdbus6','qdbus-qt6','/usr/lib/qt6/bin/qdbus'),
+  'writer':executable('kwriteconfig6','kwriteconfig5'),'dbus':executable('qdbus6','qdbus-qt6','/usr/lib/qt6/bin/qdbus'),
   'kde':'KDE' in os.environ.get('XDG_CURRENT_DESKTOP','').upper(),'boot':boot,
   'splash':bool(set(Path('/proc/cmdline').read_text().split())&{'splash','rhgb'}),
   'systemd':Path('/run/systemd/system').is_dir()}
