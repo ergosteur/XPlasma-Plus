@@ -18,6 +18,8 @@ import collections, os, re, shutil, subprocess, sys
 from pathlib import Path
 from PIL import Image, ImageChops
 import io
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import xp_marks  # noqa: E402  (the red X for "off" states)
 
 HERE = Path(__file__).resolve().parent
 ICONS = Path.home() / ".local/share/icons"
@@ -325,7 +327,7 @@ def dest_dir(size, ctx):
 stats = collections.Counter()
 OWNED_SKIPPED = set()
 # pack-owned names we may replace with a Papirus pin (none at the moment)
-# pack-owned names we replace on purpose: the bell is drawn for this repo (svg/bell.svg, bell-off.svg; see BELL below)
+# pack-owned names we replace on purpose: the bell is drawn for this repo (svg/bell.svg, plus xp_marks.py's red X when off; see BELL below)
 ALLOW_OWNED = {"notifications", "notification-active", "notification-inactive", "notification-disabled",
                "notifications-disabled", "process-working", "process-working-symbolic"}
 # names the pack itself put in XPlasma Primary at install time: never overwrite those
@@ -821,12 +823,14 @@ for n in sorted(ALLOW_OWNED):
                 path.unlink()
 
 # the tray bell: the pack draws the XP warning triangle. Ours is a golden bell in the style of the Favorites star
-# (svg/bell.svg), faded with a red slash when notifications are off (Do Not Disturb), rendered per size.
+# (svg/bell.svg), with XP's red X in the corner when notifications are off (Do Not Disturb), rendered per size.
 BELL = {"bell": ("notifications", "notification-active", "notification-inactive"),
         "bell-off": ("notifications-disabled", "notification-disabled")}
 for art_name, names in BELL.items():
     for size in SIZES:
-        img = svg_file(art_name, size)
+        img = svg_file("bell", size)
+        if art_name == "bell-off":
+            img = xp_marks.with_red_x(img)
         for n in names:
             for v in (n, n + "-symbolic"):
                 for ctx in ("status", "actions"):

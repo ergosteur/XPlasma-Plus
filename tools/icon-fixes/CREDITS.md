@@ -36,7 +36,7 @@ for how they survive the desktop apply rewriting XPlasma Primary.
   - `assets/workgroup.png`: `Workgroup.png`
 
 - `art/view-list-tiles.png`: drawn by ergosteur (based on XP's Tiles view), contributed to this project.
-- `svg/*.svg` (bell, bell-off, globe-arrow, installer-box, msi): drawn for this project.
+- `svg/*.svg` (bell, globe-arrow, installer-box, msi) and `xp_marks.py` (the red X for off/disabled states): drawn for this project.
 
 Not included: the compy-686 original used macOS's spinning beachball for `process-working`; that is Apple's
 artwork and is not redistributable, so this version pins Breeze's own spinner instead.

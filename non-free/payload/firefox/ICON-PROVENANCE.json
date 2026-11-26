@@ -52,11 +52,10 @@
       "addon.png": "Add or Remove Windows Components",
       "reader.png": "Wordpad",
       "translate.png": "Regional Settings",
-      "camera.png": "Digital Camera",
+      "camera.png": "Webcam",
       "microphone.png": "Speech",
       "speaker.png": "Volume",
       "screen.png": "RTC Share",
-      "notification.png": "Alert",
       "storage.png": "Local Disk",
       "password.png": "Key",
       "security-ok.png": "Security - Ok",
@@ -84,8 +83,15 @@
       "network.png": "Network Connection",
       "play.png": "Play",
       "xr.png": "Game Controller",
-      "drm.png": "WMP Copy Protected Music"
+      "drm.png": "WMP Copy Protected Music",
+      "canvas.png": "Display Properties"
     },
     "adaptation": "Blocked-permission variants add a red/white slash drawn by build-blocked-icons.py (GPL code). Classic close/arrow glyphs are XPlasma GPL-3.0-or-later code-native vectors."
+  },
+  "project_drawn": {
+    "license": "GPL-3.0-or-later",
+    "files": {
+      "notification.png": "tools/icon-fixes/svg/bell.svg, the tray bell drawn for this project, rendered at 96 px"
+    }
   }
 }

@@ -433,7 +433,7 @@ menupopup menuseparator { appearance: none !important; border: 0 !important; bor
 .persistent-storage-icon, .indexedDB-icon { list-style-image:url("ie6-icons/sized/storage.svg") !important; }
 .serial-icon, #serial-sharing-icon[sharing] { list-style-image:url("ie6-icons/sized/serial.svg") !important; }
 .midi-icon { list-style-image:url("ie6-icons/sized/midi.svg") !important; }
-.canvas-icon { list-style-image:url("ie6-icons/sized/image-file.svg") !important; }
+.canvas-icon { list-style-image:url("ie6-icons/sized/canvas.svg") !important; }
 .local-network-icon, .loopback-network-icon { list-style-image:url("ie6-icons/sized/network.svg") !important; }
 #password-notification-icon, #identity-credential-notification-icon, #credential-chooser-notification-icon { list-style-image:url("ie6-icons/sized/password.svg") !important; }
 #webauthn-notification-icon, .popup-notification-icon[popupid^="webauthn-prompt-"] { list-style-image:url("ie6-icons/sized/certificate.svg") !important; }
@@ -447,7 +447,7 @@ menupopup menuseparator { appearance: none !important; border: 0 !important; bor
 .persistent-storage-icon.blocked-permission-icon { list-style-image:url("ie6-icons/sized/storage-blocked.svg") !important; }
 .serial-icon.blocked-permission-icon { list-style-image:url("ie6-icons/sized/serial-blocked.svg") !important; }
 .midi-icon.blocked-permission-icon { list-style-image:url("ie6-icons/sized/midi-blocked.svg") !important; }
-.canvas-icon.blocked-permission-icon { list-style-image:url("ie6-icons/sized/image-file-blocked.svg") !important; }
+.canvas-icon.blocked-permission-icon { list-style-image:url("ie6-icons/sized/canvas-blocked.svg") !important; }
 :is(.local-network-icon,.loopback-network-icon).blocked-permission-icon { list-style-image:url("ie6-icons/sized/network-blocked.svg") !important; }
 
 /* Preserve connection and tracking-protection meanings, rather than one lock. */

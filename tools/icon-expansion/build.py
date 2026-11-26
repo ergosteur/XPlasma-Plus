@@ -6,6 +6,10 @@ from pathlib import Path
 from PIL import Image,ImageDraw
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 import glyphs
+sys.path.insert(0,str(Path(__file__).resolve().parent.parent/"icon-fixes"))
+import xp_marks
+# Sources whose XP artwork already carries the red X (no second one on top).
+ALREADY_MARKED=re.compile(r"(Disable Network Connection|Disconnected|Firewall - Off)\.png$")
 
 ROLES={
  'folder':'Folder Closed','folder-open':'Folder Opened','folder-new':'New Folder','folder-home':'My Documents','folder-documents':'My Documents','folder-pictures':'My Pictures','folder-music':'My Music','folder-videos':'My Videos','folder-download':'Folder Closed','folder-remote':'Network Folder','folder-publicshare':'Shared Folder','user-desktop':'Desktop','user-trash':'Recycle Bin (empty)','user-trash-full':'Recycle Bin (full)',
@@ -28,7 +32,7 @@ EXACT.update(TRAY_ROLES)
 
 def tray_variant(name):
  n=re.sub(r'(-symbolic|-rtl)+$','',name.lower())
- off=n in TRAY_ROLES and bool(re.search(r'-(off|disabled|inactive|blocked|unavailable|disconnected|unreachable|offline|paused|stop)$',n))
+ off=n in TRAY_ROLES and bool(re.search(r'-(off|disabled|inactive|blocked|unavailable|disconnected|unreachable|offline)$',n))   # (not paused/stop: those are states, not 'off')
  record=n=='camera-on'
  badge={'input-caps-on':'A','input-num-on':'1','input-scroll-on':'S','input-combo-on':'A1'}.get(n,'')
  return off,record,badge
@@ -45,6 +49,31 @@ PATTERNS=[
  (r'(back|previous|prev|left)','go-previous'),(r'(forward|next|right)','go-next'),(r'(^|[-_.])(up|parent)([-_.]|$)','go-up'),(r'(home)','go-home'),(r'(play)','media-playback-start'),(r'(stop|pause)','media-playback-stop'),(r'(eject|unmount)','media-eject'),(r'(zoom.*out|shrink)','zoom-out'),(r'(zoom|magnif)','zoom-in'),(r'(help|support|question)','help-contents'),(r'(error|fail|critical)','dialog-error'),(r'(warning|alert|important)','dialog-warning'),(r'(info|about|tip)','dialog-information'),(r'(success|accept|check|apply|approve)','dialog-ok'),
  (r'(favorite|bookmark|rating|star)','emblem-favorite'),(r'(link|shortcut)','emblem-symbolic-link'),(r'(email|mail|message)','internet-mail'),(r'(chat|messeng|conversation)','internet-chat'),(r'(web|www|browser|internet)','internet-web-browser'),(r'(games?|solitaire|mine|mahjong|chess|sudoku|cards)','applications-games'),
 ]
+
+def tray_state(name,item):
+ off,record,badge=tray_variant(name)
+ off=off or bool(re.search(r'(bluetooth|notifications?|nightlight|redshift).*(inactive|off|disabled|blocked|inhibited|paused)',name))
+ return off,item['role']=='media-playback-pause',record,badge
+
+def tray_canonical(source,off,pause,record,badge):
+ return 'xp-'+hashlib.sha256((source+str(off)+str(pause)+str(record)+badge).encode()).hexdigest()[:12]+'.png'
+
+def tray_image(z,source,size,off,pause,record,badge):
+ with z.open(source) as stream:image=Image.open(stream).convert('RGBA')
+ image=image.resize((size,size),Image.Resampling.LANCZOS)
+ if pause:
+  image=Image.new('RGBA',(size,size));draw=ImageDraw.Draw(image)
+  for left in (.22,.58):
+   draw.rectangle((int(size*left),int(size*.17),int(size*(left+.19)),int(size*.82)),fill='#316ac5',outline='#003c74')
+   draw.line((int(size*left)+1,int(size*.17)+1,int(size*left)+1,int(size*.82)-1),fill='#9dc7ef',width=max(1,size//16))
+ if off and not ALREADY_MARKED.search(source):
+  # XP's convention for disabled/disconnected: a small red X in the corner (tools/icon-fixes/xp_marks.py).
+  image=xp_marks.with_red_x(image)
+ if record:
+  draw=ImageDraw.Draw(image);draw.ellipse((size*.55,size*.55,size*.95,size*.95),fill='#e52525',outline='white',width=max(1,size//16))
+ if badge:
+  draw=ImageDraw.Draw(image);height=max(9,round(size*.55));width=max(9,round(height*(1.35 if len(badge)>1 else 1)));draw.rectangle((size-width,size-height,size-1,size-1),fill='#ffffe1',outline='#316ac5');draw.text((size-width+2,size-height),badge,fill='#003399',font_size=max(7,height-3))
+ return image
 
 def role(name,context=''):
  n=re.sub(r'(-symbolic|-rtl)+$','',name.lower());n=re.sub(r'^org\.kde\.','',n);n=EXACT.get(n,n)
@@ -139,28 +168,10 @@ def build(pack,output):
     if not path.exists():rendered[cache].save(path)
     dest.symlink_to(canonical)
     continue
-   off,record,badge=tray_variant(name)
-   off=off or bool(re.search(r'(bluetooth|notifications?|nightlight|redshift).*(inactive|off|disabled|blocked|inhibited|paused)',name))
-   pause=item['role']=='media-playback-pause'
+   off,pause,record,badge=tray_state(name,item)
    cache=(item['source'],size,off,pause,record,badge)
-   if cache not in rendered:
-    with z.open(item['source']) as stream:image=Image.open(stream).convert('RGBA')
-    image=image.resize((size,size),Image.Resampling.LANCZOS)
-    if pause:
-     image=Image.new('RGBA',(size,size));draw=ImageDraw.Draw(image)
-     for left in (.22,.58):
-      draw.rectangle((int(size*left),int(size*.17),int(size*(left+.19)),int(size*.82)),fill='#316ac5',outline='#003c74')
-      draw.line((int(size*left)+1,int(size*.17)+1,int(size*left)+1,int(size*.82)-1),fill='#9dc7ef',width=max(1,size//16))
-    if off:
-     image.putalpha(image.getchannel('A').point(lambda a:int(a*.45)));draw=ImageDraw.Draw(image);draw.line((size*.2,size*.8,size*.8,size*.2),fill='#d40000',width=max(1,size//12))
-    if record:
-     draw=ImageDraw.Draw(image);draw.ellipse((size*.55,size*.55,size*.95,size*.95),fill='#e52525',outline='white',width=max(1,size//16))
-    if badge:
-     draw=ImageDraw.Draw(image);height=max(9,round(size*.55));width=max(9,round(height*(1.35 if len(badge)>1 else 1)));draw.rectangle((size-width,size-height,size-1,size-1),fill='#ffffe1',outline='#316ac5');draw.text((size-width+2,size-height),badge,fill='#003399',font_size=max(7,height-3))
-    canonical='xp-'+hashlib.sha256((item['source']+str(off)+str(pause)+str(record)+badge).encode()).hexdigest()[:12]+'.png';path=dest.parent/canonical
-    if not path.exists():image.save(path)
-    rendered[cache]=image
-   canonical='xp-'+hashlib.sha256((item['source']+str(off)+str(pause)+str(record)+badge).encode()).hexdigest()[:12]+'.png';path=dest.parent/canonical
+   canonical=tray_canonical(item['source'],off,pause,record,badge);path=dest.parent/canonical
+   if cache not in rendered:rendered[cache]=tray_image(z,item['source'],size,off,pause,record,badge)
    if not path.exists():rendered[cache].save(path)
    if dest.exists() or dest.is_symlink():dest.unlink()
    dest.symlink_to(canonical)
