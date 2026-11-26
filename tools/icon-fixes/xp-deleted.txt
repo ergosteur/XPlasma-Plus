@@ -1638,14 +1638,3 @@ status/microphone-sensitivity-muted
 status/microphone-sensitivity-muted-rtl
 status/microphone-sensitivity-muted-symbolic
 status/microphone-sensitivity-muted-symbolic-rtl
-# 2026-11-26: flight mode never existed in XP; the pack gave it the disconnected-network picture. Breeze's airplane instead.
-status/flightmode-on
-status/flightmode-on-symbolic
-status/flightmode-off
-status/flightmode-off-symbolic
-status/network-flightmode
-status/network-flightmode-symbolic
-status/network-flightmode-on
-status/network-flightmode-on-symbolic
-status/network-flightmode-off
-status/network-flightmode-off-symbolic

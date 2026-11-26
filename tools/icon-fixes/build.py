@@ -390,7 +390,7 @@ def link(name, ctx, size, source):
 # strips zoom-in -> zoom inside the XP theme. Kept in XP colour: the media controller's tray state icons
 # (media-playback-playing/-paused/-stopped), recreated from the pack's own pictures if an earlier run removed them.
 FLAT = re.compile(r"^(media-(playback|skip|seek|record|playlist|repeat)-.*|media-record.*|zoom-.*|zoom)$")
-TRAY_STATE = {"playing": "xp-f67e5cab", "paused": "xp-6aa302ae", "stopped": "xp-5b68262c"}
+TRAY_STATE = {"playing": "xp-f67e5cab", "paused": "xp-6aa302ae", "stopped": "xp-018211a6"}   # (stopped: the plain Stop, not the old crossed-out one)
 flat_removed = flat_restored = 0
 for theme in (PRIM, EXT):
     for path in sorted(theme.glob("*x*/*/*")):
@@ -416,6 +416,21 @@ for status in sorted(EXT.glob("*x*/status")):
                 (status / name).symlink_to(src.name)
             flat_restored += 1
 print(f"flat media/zoom: removed {flat_removed} XP entries (-> Breeze); tray state icons recreated {flat_restored}")
+
+# Flight mode never existed in XP: both XP themes gave it the disconnected-network picture. Removed from both at every
+# size (the primary theme ships its own copies too) and pinned to Breeze's airplane below.
+FLIGHT = {"flightmode-on": "flightmode-on", "flightmode-off": "flightmode-off", "network-flightmode": "network-flightmode-on",
+          "network-flightmode-on": "network-flightmode-on", "network-flightmode-off": "network-flightmode-off"}
+flight_removed = 0
+for theme in (PRIM, EXT):
+    for name in FLIGHT:
+        for v in (name, name + "-symbolic"):
+            for path in theme.glob(f"*x*/*/{v}.*"):
+                if path.is_symlink() or path.is_file():
+                    if not DRY:
+                        path.unlink()
+                    flight_removed += 1
+print(f"flight mode: removed {flight_removed} XP entries (-> Breeze's airplane)")
 
 # --------------------------------------------------------------------------------------------
 # A distinct Save As (compy-686 postinstall step 5)
@@ -936,6 +951,12 @@ if DELETED_LIST.is_file():
             if n in pap_names and n not in generated and n not in PACK_OWNED and pin(n):
                 DELETED_PINNED += 1
 print(f"deleted names pinned to Breeze: {DELETED_PINNED}")
+flight_pinned = 0
+for name, via in FLIGHT.items():
+    for v, vv in ((name, via), (name + "-symbolic", via + "-symbolic")):
+        if v not in generated and (pin(v, via=vv if vv in pap_names else via)):
+            flight_pinned += 1
+print(f"flight mode names pinned to Breeze: {flight_pinned}")
 for n, absorber in sorted(intercepted):
     if absorber in PIN_ABSORBERS and not is_fallthrough(n):
         if pin(n):
