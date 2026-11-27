@@ -193,10 +193,21 @@ OVERRIDES = {
     "battery-full-symbolic": ("preferences-system-power-management", "status"),
 }
 
-# XP art for these folders already exists and is simply hidden: expose (other folder-* variants are
-# plain yellow folders, nothing to gain)
+# XP art for these folders already exists and is simply hidden: expose (other folder-* variants that
+# aren't generated below are plain yellow folders, nothing to gain)
 FOLDER_EXPOSE = {"folder-publicshare", "folder-image", "folder-images", "folder-picture",
                  "folder-image-people", "folder-video"}
+
+# Dolphin's "Folder Color" picker (kfileitemaction's setfoldericonitemaction, a fixed ten names -- it sets
+# Icon=folder-<name> on the .directory file and leaves resolution to the icon theme) recolours the pack's
+# own yellow folder by hue; saturation/value are scaled relative to the pack's own yellow by the same ratio
+# Breeze's real folder-<name>.svg carries relative to Breeze's own folder-yellow.svg, so the shading (gloss,
+# shadow) stays the pack's but the vividness matches Breeze's palette. Yellow/Default keep the unmodified art.
+FOLDER_COLOR_HUES = {
+    "red": (345, 1.30, 0.97), "orange": (35, 1.00, 1.00), "green": (155, 0.90, 0.71),
+    "cyan": (189, 1.00, 0.89), "blue": (214, 0.95, 0.89), "violet": (282, 0.83, 0.71),
+    "brown": (29, 0.80, 0.57), "grey": (203, 0.10, 0.74),
+}
 
 # script file types: the pack's own "Java Script" page (yellow scroll on a blue page) with the scroll's hue
 # rotated: language -> (target hue in degrees, brightness factor); yellow is the unmodified art
@@ -516,6 +527,15 @@ def script_art(palette, size):
     return out
 
 
+def folder_color_art(size, hue, sat, val):
+    img = art("folder", size)
+    h, s, v = img.convert("RGB").convert("HSV").split()
+    out = Image.merge("HSV", (h.point(lambda x: round(hue / 360 * 255)), s.point(lambda x: min(255, round(x * sat))),
+                              v.point(lambda x: min(255, round(x * val))))).convert("RGB").convert("RGBA")
+    out.putalpha(img.getchannel("A"))
+    return out
+
+
 def status_art(state, size):
     img = art("internet-chat", size)                        # Windows Messenger
     t = STATUS_TINT[state]
@@ -598,6 +618,10 @@ for size in SIZES:
                     "recent": lambda: recent_badge(size)}[kind]()
             img = badge_on(folder, over, frac, corner)
         write_png(name, "places", size, img)
+        generated.add(name)
+    for pal, (hue, sat, val) in FOLDER_COLOR_HUES.items():
+        name = f"folder-{pal}"
+        write_png(name, "places", size, folder_color_art(size, hue, sat, val))
         generated.add(name)
     for pal, names in SCRIPTS.items():
         img = script_art(pal, size)
