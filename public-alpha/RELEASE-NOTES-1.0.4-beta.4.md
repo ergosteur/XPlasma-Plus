@@ -1,5 +1,3 @@
-# XPlasma Plus 1.0.4 Beta 4 (ergosteur fork)
-
 An unofficial fork of [andymenard/XPlasma-Plus](https://github.com/andymenard/XPlasma-Plus) 1.0.3. It adds Plasma 6.8 support, a set of optional customizations, and fixes. Report problems with this build on [this fork's issues](https://github.com/ergosteur/XPlasma-Plus/issues), not upstream.
 
 ## Changed since Beta 3
