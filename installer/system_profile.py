@@ -50,11 +50,13 @@ def detect():
  # the root helper runs it through pkexec, whose PATH has it.)
  sbin=os.pathsep.join([os.environ.get('PATH',''),'/usr/local/sbin','/usr/sbin','/sbin'])
  boot=next((x for x in ['update-initramfs','dracut'] if shutil.which(x,path=sbin)),None)
+ dm=Path('/etc/systemd/system/display-manager.service')
  return {'name':release.get('PRETTY_NAME','Linux'),'family':family,'arch':arch,'plasma':numbers(plasma),'qt':numbers(qt),
   'writer':executable('kwriteconfig6','kwriteconfig5'),'dbus':executable('qdbus6','qdbus-qt6','/usr/lib/qt6/bin/qdbus'),
   'kde':'KDE' in os.environ.get('XDG_CURRENT_DESKTOP','').upper(),'boot':boot,
   'splash':bool(set(Path('/proc/cmdline').read_text().split())&{'splash','rhgb'}),
-  'systemd':Path('/run/systemd/system').is_dir()}
+  'systemd':Path('/run/systemd/system').is_dir(),
+  'displaymanager':dm.resolve().name if dm.is_symlink() else None}
 # The login and boot screens belong to the whole system, so one account's
 # installation manages them; root_helper.py publishes which one here, since
 # its per-account records are readable by root only.
@@ -84,6 +86,7 @@ def capabilities(profile,features):
  if not profile['family']:disable(['theme_manager','desktop','apps','taskbar','login','boot','caption_animation'],'Automatic dependency installation supports APT, DNF, pacman, Zypper and XBPS families.')
  if profile['arch'] not in {'amd64','arm64'}:disable(['firefox','firefox_default'],'Bundled Firefox ESR supports Intel/AMD 64-bit and ARM64.')
  if not profile['systemd']:disable(['login'],'Automatic display-manager switching requires systemd. Other desktop features use XDG autostart.')
+ if profile.get('displaymanager')=='plasmalogin.service':disable(['login'],"XP's Welcome login screen is an SDDM theme; this system's login manager is Plasma's own plasmalogin, which doesn't support SDDM themes. Switch to SDDM yourself first (install sddm and enable it) if you want this feature.")
  if not profile['boot']:disable(['boot'],'Requires dracut or update-initramfs to rebuild the boot image; neither was found.')
  elif not profile['splash']:disable(['boot'],'The kernel command line has no splash or rhgb option, so Plymouth is not showing a boot splash. Enable it in your bootloader first; the installer does not alter bootloader arguments.')
  manager=screens_manager()

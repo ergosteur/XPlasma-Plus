@@ -39,6 +39,13 @@ class Compatibility(unittest.TestCase):
   support=self.support(systemd=False,plasma=(6,7,5),qt=(6,11,2),family='xbps')
   for feature in ['desktop','taskbar','session']:self.assertEqual(support[feature],'')
   self.assertIn('systemd',support['login'])
+ def test_plasmalogin_blocks_the_sddm_login_screen_but_not_the_rest(self):
+  support=self.support(displaymanager='plasmalogin.service')
+  self.assertIn('plasmalogin',support['login'])
+  for feature in ['desktop','taskbar','boot']:self.assertEqual(support[feature],'')
+ def test_sddm_and_unset_display_managers_remain_available(self):
+  self.assertEqual(self.support(displaymanager='sddm.service')['login'],'')
+  self.assertEqual(self.support(displaymanager=None)['login'],'')
  def test_other_plasma_major_is_not_enabled(self):
   self.assertTrue(self.support(plasma=(5,27,0))['desktop'])
 

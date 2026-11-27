@@ -77,3 +77,11 @@ What has been covered so far: Fedora 45 (Plasma 6.8, also with Fedora Budgie's `
   also kicked in from the installer whenever the look/taskbar/decoration all looked already in place, which forced
   `o.fonts`/`o.icons` off regardless of what changed. The installer's own `apply` call now always passes
   `--no-color-only`.
+- Fedora 45's KDE spin defaults to `plasmalogin` (Plasma 6.8's own login manager) instead of SDDM. XP's Welcome
+  login screen is an SDDM theme (`/usr/share/sddm/themes/xp-welcome` + `/etc/sddm.conf.d/90-xp-welcome.conf`);
+  attempting the SDDM switch on a plasmalogin system left `root_helper.py screens` failing partway (`systemctl
+  enable sddm.service`, package never installed) with the failure-recovery path itself failing the same way
+  (hardcoded `systemctl disable sddm.service` in the rollback). The `login` feature is now disabled with an
+  explanation (`system_profile.py`'s `displaymanager` detection) whenever the system's `display-manager.service`
+  resolves to `plasmalogin.service`, same as the existing non-systemd/no-package-manager disables. Other features
+  (desktop, taskbar, boot splash) are unaffected.
