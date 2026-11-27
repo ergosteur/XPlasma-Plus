@@ -11,6 +11,10 @@ An unofficial fork of [andymenard/XPlasma-Plus](https://github.com/andymenard/XP
 
 ## Tested
 
+This release's archive:
+
+- **Fedora 45 KDE** (Plasma 6.8): freshly built from this commit, installed end-to-end in a clean VM (theme Royale, every feature) and removed again; the fork's checks pass (14 OK, 0 FAIL).
+
 The underlying fixes, before packaging:
 
 - **Debian 13, Kubuntu 26.04, Fedora 45:** the notification changes, via real installer runs with live triggered notifications.
